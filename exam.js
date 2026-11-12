@@ -27,6 +27,16 @@ const cand = safeParse(
   sessionStorage.getItem('neet_candidate') || ''
 );
 
+// Selected exam display settings are read from the authenticated exam selector.
+// Server-side ExamWindows remains authoritative for schedule, timer and scoring.
+if (cand && cand.examWindowId) {
+  const selectedStart = Date.parse(cand.examStartISO || '');
+  const selectedEnd = Date.parse(cand.examEndISO || '');
+  if (Number.isFinite(selectedStart)) window.EXAM_START_MS = selectedStart;
+  if (Number.isFinite(selectedEnd)) window.EXAM_END_MS = selectedEnd;
+  if (Number(cand.examDurationMin) > 0) window.EXAM_DURATION_MIN = Number(cand.examDurationMin);
+}
+
 const activeCandidateId = String(
   cand?.candidateId || cand?.id || ''
 ).trim();
@@ -36,15 +46,12 @@ function candidateWindowStorageKey(prefix, candidateId) {
     String(candidateId || '').trim()
   );
 
-  const startMs = Number.isFinite(window.EXAM_START_MS)
-    ? window.EXAM_START_MS
-    : 0;
+  const windowKey = String(cand?.examWindowId || (
+    (Number.isFinite(window.EXAM_START_MS) ? window.EXAM_START_MS : 0) + '_' +
+    (Number.isFinite(window.EXAM_END_MS) ? window.EXAM_END_MS : 0)
+  ));
 
-  const endMs = Number.isFinite(window.EXAM_END_MS)
-    ? window.EXAM_END_MS
-    : 0;
-
-  return `${prefix}_${cid}_${startMs}_${endMs}`;
+  return `${prefix}_${cid}_${encodeURIComponent(windowKey)}`;
 }
 
 const SUBMITTED_KEY = candidateWindowStorageKey(
@@ -190,15 +197,12 @@ function buildStateKey() {
     cand?.candidateId || cand?.id || 'guest'
   );
 
-  const startMs = Number.isFinite(window.EXAM_START_MS)
-    ? window.EXAM_START_MS
-    : 0;
+  const windowKey = String(cand?.examWindowId || (
+    (Number.isFinite(window.EXAM_START_MS) ? window.EXAM_START_MS : 0) + '_' +
+    (Number.isFinite(window.EXAM_END_MS) ? window.EXAM_END_MS : 0)
+  ));
 
-  const endMs = Number.isFinite(window.EXAM_END_MS)
-    ? window.EXAM_END_MS
-    : 0;
-
-  return `neet_exam_state_${cid}_${startMs}_${endMs}`;
+  return `neet_exam_state_${cid}_${encodeURIComponent(windowKey)}`;
 }
 
 const KEY = buildStateKey();
@@ -236,7 +240,10 @@ function pad2(n) {
 }
 
 async function postAPI(payload, options = {}) {
-  if (['startExam','submit','violation','examHeartbeat'].includes(payload.action)) {
+  payload = Object.assign({
+    examWindowId: cand.examWindowId || ''
+  }, payload || {});
+  if (['startExam','submit','violation','examHeartbeat','checkExamAccess'].includes(payload.action)) {
     payload = Object.assign({}, payload, {
       accessToken: cand.accessToken || '',
       deviceSessionId: cand.deviceSessionId || ''
