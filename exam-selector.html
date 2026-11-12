@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#071a32">
+<title>Select Examination - DAMS CBT</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;padding:24px;background:#f2f5f9;color:#132c49;font-family:Arial,sans-serif}
+.wrap{max-width:900px;margin:4vh auto}.brand{font-size:13px;letter-spacing:.12em;font-weight:800;color:#174a7c}
+h1{margin:8px 0;color:#0a2342}.subtitle{color:#617187;line-height:1.55}
+.candidate{margin:18px 0;padding:14px 16px;background:#eaf0f6;border-radius:12px;font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:16px;margin-top:20px}
+.exam{background:#fff;border:1px solid #dce4ee;border-radius:16px;padding:20px;box-shadow:0 8px 25px rgba(15,40,70,.06);display:flex;flex-direction:column;gap:12px}
+.exam h2{margin:0;font-size:20px}.meta{font-size:14px;color:#53667d;line-height:1.6}.status{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em}
+.status.open{color:#16734a}.status.upcoming{color:#a15a00}.status.closed{color:#8b3c3c}
+button{border:0;border-radius:9px;padding:12px 15px;background:#123f6b;color:#fff;font-weight:800;cursor:pointer}
+button:disabled{opacity:.45;cursor:not-allowed}.notice{margin:16px 0;padding:12px 14px;border-radius:10px;background:#edf3fa;color:#34506e}
+.notice.error{background:#fff0f0;color:#a11}.actions{display:flex;gap:10px;justify-content:flex-end;margin-top:22px}
+@media(max-width:600px){body{padding:16px}.wrap{margin:2vh auto}.exam{padding:16px}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="brand">DAMS TRIVANDRUM · ZENITH NEET PG / INICET</div>
+  <h1>Select Your Examination</h1>
+  <p class="subtitle">Choose the examination you are registered to take. Your centre QR authorization will be tied to this examination and this browser session.</p>
+  <div class="candidate" id="candidate">Verifying candidate session…</div>
+  <div id="notice" class="notice" role="status" aria-live="polite">Loading available examinations…</div>
+  <section id="examList" class="grid" aria-label="Available examinations"></section>
+  <div class="actions"><button id="logoutBtn" type="button">Cancel / Logout</button></div>
+</main>
+<script src="config.js?v=20261112_exams_v1"></script>
+<script src="exam-selector.js?v=20261112_exams_v1"></script>
+</body></html>
