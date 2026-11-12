@@ -1,513 +1,406 @@
 
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
-
-  <meta
-    name="theme-color"
-    content="#071a32"
-  >
-
-  <meta
-    name="description"
-    content="DAMS Trivandrum NEET PG Mock Test Series Candidate Result"
-  >
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#071a32">
+  <meta name="description" content="DAMS Trivandrum NEET PG Mock Test Result">
   <title>Result - DAMS Trivandrum Mock Test Series</title>
 
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    html,
-    body {
-      margin: 0;
-      min-height: 100%;
-    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
 
     body.result-page {
       min-height: 100vh;
       min-height: 100svh;
       padding: 12px;
-
-      display: flex;
-      align-items: center;
-      justify-content: center;
-
       background: #f2f5f9;
       color: #26364d;
-
       font-family: Arial, sans-serif;
     }
 
     .result-container {
       width: min(1180px, 100%);
-      margin: auto;
+      margin: 20px auto;
       padding: clamp(14px, 2.2vh, 24px);
-
       border: 1px solid #e1e7ef;
       border-radius: 20px;
-
-      background: #ffffff;
-
-      box-shadow:
-        0 12px 38px rgba(15, 35, 60, .10);
+      background: #fff;
+      box-shadow: 0 12px 38px rgba(15,35,60,.10);
     }
 
     .brand-heading {
       margin: 0 0 3px;
-
       color: #173f6c;
       text-align: center;
-
       font-size: clamp(17px, 2.3vw, 27px);
       line-height: 1.15;
-
       font-weight: 900;
       letter-spacing: .055em;
     }
 
     .result-heading {
-      margin: 0 0 12px;
-
+      margin: 0 0 16px;
       color: #102b4c;
       text-align: center;
-
       font-size: clamp(25px, 3vw, 36px);
-      line-height: 1.1;
-
       font-weight: 900;
     }
 
-    /* Candidate details */
+    .section-title {
+      margin: 0 0 12px;
+      color: #173f6c;
+      font-size: clamp(19px, 2.2vw, 25px);
+      font-weight: 900;
+    }
+
+    .section-subtitle {
+      margin: -5px 0 13px;
+      color: #66758a;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .panel {
+      margin-top: 16px;
+      padding: 16px;
+      border: 1px solid #e1e7ef;
+      border-radius: 15px;
+      background: #fff;
+    }
 
     .candidate-card {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
-
       gap: 8px 14px;
-
       padding: 12px 14px;
       margin-bottom: 10px;
-
       border: 1px solid #e1e7ef;
       border-radius: 13px;
-
-      background: #ffffff;
     }
 
     .candidate-line {
       min-width: 0;
       overflow-wrap: anywhere;
-
       font-size: clamp(12px, 1.2vw, 15px);
-      line-height: 1.35;
+      line-height: 1.4;
     }
 
-    .candidate-line strong {
-      color: #34445b;
-    }
-
-    /* Result statistics */
+    .candidate-line strong { color: #34445b; }
 
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-
       gap: 9px;
     }
 
     .stat-card {
       min-width: 0;
-
-      padding: 10px 13px;
-
+      padding: 11px 13px;
       border: 1px solid #e1e7ef;
       border-radius: 13px;
-
-      background: #ffffff;
+      background: #fff;
     }
 
     .stat-label {
       color: #526176;
-
       font-size: 13px;
       font-weight: 750;
     }
 
     .stat-value {
-      margin-top: 2px;
-
+      margin-top: 3px;
       color: #142f50;
-
       font-size: clamp(21px, 2.6vw, 31px);
       line-height: 1.1;
-
       font-weight: 900;
       overflow-wrap: anywhere;
     }
 
-    /* Buttons */
-
     .result-actions {
       display: flex;
-
       justify-content: center;
       align-items: center;
-
       flex-wrap: wrap;
       gap: 10px;
-
-      margin-top: 12px;
+      margin-top: 14px;
     }
 
     .result-btn {
-      min-width: 145px;
+      min-width: 125px;
       min-height: 42px;
-
-      padding: 9px 18px;
-
+      padding: 9px 17px;
       border: 0;
       border-radius: 10px;
-
       font-weight: 800;
       font-size: 14px;
-
       cursor: pointer;
-
-      transition:
-        opacity .2s ease,
-        transform .2s ease;
     }
 
-    .result-btn:hover {
-      opacity: .9;
-      transform: translateY(-1px);
-    }
-
-    .result-btn:disabled {
-      opacity: .5;
-      cursor: not-allowed;
-    }
-
-    .result-btn.primary {
-      color: #ffffff;
-      background: #173f6c;
-    }
-
-    .result-btn.secondary {
-      color: #173f6c;
-      background: #eaf0f6;
-    }
-
-    /* Status message */
+    .result-btn.primary { color: #fff; background: #173f6c; }
+    .result-btn.secondary { color: #173f6c; background: #eaf0f6; }
+    .result-btn.danger { color: #fff; background: #a12d3d; }
+    .result-btn:disabled { opacity: .55; cursor: not-allowed; }
 
     .result-note {
-      min-height: 17px;
-      margin-top: 7px;
-
+      min-height: 18px;
+      margin-top: 9px;
       text-align: center;
-
       color: #66758a;
       font-size: 12px;
-
       overflow-wrap: anywhere;
     }
 
-    .result-note.error {
-      color: #a12d2d;
+    .result-note.error { color: #a12d2d; }
+
+    .history-list {
+      display: grid;
+      gap: 9px;
     }
 
-    /* Mobile layout */
+    .history-item {
+      display: grid;
+      grid-template-columns: 1.5fr repeat(3, minmax(70px, .7fr)) auto;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid #dfe6ef;
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .history-item.selected {
+      border: 2px solid #245987;
+      background: #f2f7fc;
+    }
+
+    .history-date {
+      color: #34445b;
+      font-size: 13px;
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+
+    .history-metric small {
+      display: block;
+      color: #66758a;
+      font-size: 11px;
+    }
+
+    .history-metric strong {
+      display: block;
+      margin-top: 3px;
+      color: #173f6c;
+      font-size: 17px;
+    }
+
+    .history-select {
+      border: 0;
+      border-radius: 9px;
+      padding: 9px 12px;
+      color: #fff;
+      background: #173f6c;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .analysis-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .analysis-card {
+      min-width: 0;
+      padding: 13px;
+      border: 1px solid #e1e7ef;
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .analysis-card h3 {
+      margin: 0 0 10px;
+      color: #173f6c;
+      font-size: 16px;
+    }
+
+    .analysis-row {
+      padding: 10px 0;
+      border-top: 1px solid #edf0f4;
+    }
+
+    .analysis-row:first-of-type { border-top: 0; }
+
+    .analysis-row-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      color: #34445b;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .analysis-details {
+      margin-top: 5px;
+      color: #66758a;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .progress-track {
+      height: 8px;
+      margin-top: 7px;
+      overflow: hidden;
+      border-radius: 20px;
+      background: #e9eef4;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0;
+      border-radius: 20px;
+      background: #28734f;
+    }
+
+    .behaviour-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .behaviour-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px;
+      border-radius: 9px;
+      background: #f3f6fa;
+      font-size: 13px;
+    }
+
+    .behaviour-item strong { color: #173f6c; }
+
+    .empty-state {
+      padding: 16px;
+      border-radius: 10px;
+      color: #66758a;
+      background: #f3f6fa;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .metadata-note {
+      margin-top: 12px;
+      padding: 11px;
+      border-radius: 9px;
+      color: #526176;
+      background: #f3f6fa;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .loading {
+      color: #66758a;
+      font-size: 13px;
+    }
 
     @media (max-width: 700px) {
-
-      body.result-page {
-        padding: 8px;
-        align-items: flex-start;
-      }
-
-      .result-container {
-        padding: 13px;
-        border-radius: 15px;
-      }
-
-      .candidate-card {
+      body.result-page { padding: 8px; }
+      .result-container { margin: 8px auto; padding: 13px; border-radius: 15px; }
+      .candidate-card { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+      .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+      .stat-card { padding: 9px 10px; }
+      .stat-label { font-size: 12px; }
+      .panel { padding: 12px; }
+      .analysis-grid { grid-template-columns: 1fr; }
+      .history-item {
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 8px;
       }
-
-      .stats-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 7px;
-      }
-
-      .stat-card {
-        padding: 9px 10px;
-      }
-
-      .stat-label {
-        font-size: 12px;
-      }
-
-      .result-btn {
-        min-width: 125px;
-      }
+      .history-date { grid-column: 1 / -1; }
+      .history-select { grid-column: 1 / -1; width: 100%; }
+      .result-btn { min-width: 120px; }
     }
 
-    /* Short-height desktop screens */
-
-    @media (max-height: 650px) and (min-width: 701px) {
-
-      body.result-page {
-        padding: 6px;
-      }
-
-      .result-container {
-        padding: 10px 14px;
-      }
-
-      .candidate-card {
-        padding: 8px 12px;
-        margin-bottom: 7px;
-      }
-
-      .stats-grid {
-        gap: 6px;
-      }
-
-      .stat-card {
-        padding: 7px 11px;
-      }
-
-      .result-actions {
-        margin-top: 7px;
-      }
-
-      .result-btn {
-        min-height: 36px;
-      }
+    @media (max-width: 360px) {
+      .candidate-card { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
     }
-
-    @media (prefers-reduced-motion: reduce) {
-
-      *,
-      *::before,
-      *::after {
-        transition: none !important;
-      }
-    }
-
   </style>
-
 </head>
 
 <body class="result-page">
-
   <main class="result-container">
 
-    <!-- Institution heading -->
+    <h1 class="brand-heading">DAMS TRIVANDRUM MOCK TEST SERIES</h1>
+    <h2 class="result-heading">Result</h2>
 
-    <h1 class="brand-heading">
-      DAMS TRIVANDRUM MOCK TEST SERIES
-    </h1>
-
-    <h2 class="result-heading">
-      Result
-    </h2>
-
-
-    <!-- Candidate details -->
-
-    <section
-      class="candidate-card"
-      aria-label="Candidate details"
-    >
-
-      <div class="candidate-line">
-        <strong>Name:</strong>
-        <span id="candName">-</span>
-      </div>
-
-      <div class="candidate-line">
-        <strong>Candidate ID:</strong>
-        <span id="candId">-</span>
-      </div>
-
-      <div class="candidate-line">
-        <strong>Email:</strong>
-        <span id="candEmail">-</span>
-      </div>
-
-      <div class="candidate-line">
-        <strong>Phone:</strong>
-        <span id="candPhone">-</span>
-      </div>
-
+    <section class="candidate-card" aria-label="Candidate details">
+      <div class="candidate-line"><strong>Name:</strong> <span id="candName">-</span></div>
+      <div class="candidate-line"><strong>Candidate ID:</strong> <span id="candId">-</span></div>
+      <div class="candidate-line"><strong>Email:</strong> <span id="candEmail">-</span></div>
+      <div class="candidate-line"><strong>Phone:</strong> <span id="candPhone">-</span></div>
     </section>
 
-
-    <!-- Examination statistics -->
-
-    <section
-      class="stats-grid"
-      aria-label="Examination result"
-    >
-
-      <div class="stat-card">
-
-        <div class="stat-label">
-          Score
-        </div>
-
-        <div
-          class="stat-value"
-          id="score"
-        >
-          -
-        </div>
-
-      </div>
-
-
-      <div class="stat-card">
-
-        <div class="stat-label">
-          Correct
-        </div>
-
-        <div
-          class="stat-value"
-          id="correct"
-        >
-          -
-        </div>
-
-      </div>
-
-
-      <div class="stat-card">
-
-        <div class="stat-label">
-          Wrong
-        </div>
-
-        <div
-          class="stat-value"
-          id="wrong"
-        >
-          -
-        </div>
-
-      </div>
-
-
-      <div class="stat-card">
-
-        <div class="stat-label">
-          Unattempted
-        </div>
-
-        <div
-          class="stat-value"
-          id="unattempted"
-        >
-          -
-        </div>
-
-      </div>
-
-
-      <div class="stat-card">
-
-        <div class="stat-label">
-          Time Taken
-        </div>
-
-        <div
-          class="stat-value"
-          id="timeTaken"
-        >
-          -
-        </div>
-
-      </div>
-
-
-      <div class="stat-card">
-
-        <div class="stat-label">
-          Violations
-        </div>
-
-        <div
-          class="stat-value"
-          id="violations"
-        >
-          0
-        </div>
-
-      </div>
-
+    <section class="stats-grid" aria-label="Examination result">
+      <div class="stat-card"><div class="stat-label">Score</div><div class="stat-value" id="score">-</div></div>
+      <div class="stat-card"><div class="stat-label">Correct</div><div class="stat-value" id="correct">-</div></div>
+      <div class="stat-card"><div class="stat-label">Wrong</div><div class="stat-value" id="wrong">-</div></div>
+      <div class="stat-card"><div class="stat-label">Unattempted</div><div class="stat-value" id="unattempted">-</div></div>
+      <div class="stat-card"><div class="stat-label">Time Taken</div><div class="stat-value" id="timeTaken">-</div></div>
+      <div class="stat-card"><div class="stat-label">Violations</div><div class="stat-value" id="violations">0</div></div>
     </section>
-
-
-    <!-- Result actions -->
 
     <div class="result-actions">
-
-      <button
-        class="result-btn primary"
-        type="button"
-        onclick="backToLogin()"
-      >
-        Logout
-      </button>
-
-
-      <button
-        class="result-btn secondary"
-        type="button"
-        onclick="backToLogin()"
-      >
-        Back to Login
-      </button>
-
+      <button class="result-btn primary" type="button" onclick="backToLogin()">Logout</button>
+      <button class="result-btn secondary" type="button" onclick="backToLogin()">Back to Login</button>
     </div>
 
-
-    <!-- Server response status -->
-
-    <div
-      class="result-note"
-      id="statusNote"
-      role="status"
-      aria-live="polite"
-    >
+    <div class="result-note" id="statusNote" role="status" aria-live="polite">
       Loading result…
     </div>
 
+    <!-- RESULT HISTORY -->
+    <section class="panel" id="historyPanel">
+      <h2 class="section-title">Result History</h2>
+      <p class="section-subtitle">
+        Your previous submitted examination results. Select a result to view its performance analysis.
+      </p>
+      <div id="historyStatus" class="loading">Loading result history…</div>
+      <div id="historyList" class="history-list"></div>
+    </section>
+
+    <!-- PERFORMANCE ANALYSIS -->
+    <section class="panel" id="analysisPanel">
+      <h2 class="section-title">Performance Analysis</h2>
+      <p class="section-subtitle" id="analysisSubtitle">
+        Subject-wise and behavioural analysis of the selected examination.
+      </p>
+
+      <div id="analysisStatus" class="loading">
+        Select a result to load performance analysis.
+      </div>
+
+      <div id="analysisContent" hidden>
+        <div class="analysis-grid">
+          <div class="analysis-card">
+            <h3>Subject-wise Performance</h3>
+            <div id="subjectAnalysis"></div>
+          </div>
+
+          <div class="analysis-card">
+            <h3>Behavioural Analysis</h3>
+            <div id="behaviourAnalysis"></div>
+          </div>
+        </div>
+
+        <div class="metadata-note" id="metadataNote"></div>
+      </div>
+    </section>
+
   </main>
 
-
-  <!-- Load configuration first -->
-
-  <script src="config.js?v=20261112_qr_b"></script>
-
-
-  <!-- Load candidate-scoped result controller -->
-
-  <script src="result.js?v=20261112_qr_b"></script>
-
-
+  <script src="config.js?v=20261112_qr_c"></script>
+  <script src="result.js?v=20261112_qr_c"></script>
 </body>
-
 </html>
