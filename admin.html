@@ -1,41 +1,6 @@
-<!DOCTYPE html>
-<html>
-<head>
-<title>Admin Monitor</title>
-<style>
-table{width:100%;border-collapse:collapse;}
-td,th{border:1px solid #ccc;padding:8px;}
-</style>
-</head>
-<body>
-
-<h2>Live CBT Monitoring</h2>
-<table>
-<thead>
-<tr><th>Roll</th><th>Name</th><th>Status</th><th>Violations</th><th>Time</th></tr>
-</thead>
-<tbody id="data"></tbody>
-</table>
-
-<script>
-setInterval(()=>{
-fetch("https://YOUR_FIREBASE_DB.firebaseio.com/live.json")
-.then(r=>r.json())
-.then(d=>{
-let html="";
-for(let k in d){
-html+=`<tr>
-<td>${k}</td>
-<td>${d[k].name}</td>
-<td>${d[k].status}</td>
-<td>${d[k].violations}</td>
-<td>${d[k].time}</td>
-</tr>`;
-}
-document.getElementById("data").innerHTML=html;
-});
-},2000);
-</script>
-
-</body>
-</html>
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#071a32"><title>DAMS CBT Centre Admin</title><style>*{box-sizing:border-box}body{margin:0;padding:20px;background:#f1f4f8;color:#172b45;font-family:Arial,sans-serif}.wrap{max-width:1100px;margin:auto}.panel{background:#fff;border:1px solid #dfe6ee;border-radius:14px;padding:18px;margin:14px 0;box-shadow:0 5px 18px #0b234010}h1{color:#0c2d50;margin:4px 0 6px}.muted{color:#63748a;font-size:13px}.row{display:flex;gap:9px;flex-wrap:wrap;align-items:center}input{padding:11px;border:1px solid #cbd5e1;border-radius:8px;min-width:180px;flex:1}button{padding:10px 14px;border:0;border-radius:8px;background:#174a7c;color:#fff;font-weight:700;cursor:pointer}button.secondary{background:#e9eff6;color:#173f6c}button.danger{background:#a52636}button:disabled{opacity:.5}video{width:min(100%,480px);background:#101820;border-radius:10px;display:none;margin-top:12px}table{width:100%;border-collapse:collapse;font-size:13px}td,th{text-align:left;border-bottom:1px solid #e3e8ef;padding:9px;vertical-align:top;overflow-wrap:anywhere}.table-wrap{overflow-x:auto}#dashboard{display:none}#loginPanel{max-width:460px;margin:7vh auto}.notice{padding:10px;background:#eef3f9;border-radius:8px;margin-top:10px;white-space:pre-wrap}.error{color:#a11;background:#fff0f0}.section-title{margin:0 0 12px}#cameraMsg{font-size:13px;color:#617086}</style></head><body><main class="wrap"><header><h1>DAMS TRIVANDRUM — CBT Centre Admin</h1><p class="muted">Authenticated invigilator console • QR approval • active sessions • audit</p></header>
+<section class="panel" id="loginPanel"><h2>Admin Login</h2><div class="row"><input id="adminUser" autocomplete="username" placeholder="Admin username"><input id="adminPass" type="password" autocomplete="current-password" placeholder="Admin password"></div><p><button id="loginBtn">Sign in</button></p><div id="loginMsg" class="notice">Use credentials configured in Apps Script Script Properties.</div></section>
+<div id="dashboard"><section class="panel"><h2 class="section-title">Scan candidate QR</h2><p class="muted">The QR opens this admin page with a one-time challenge. Log in first, then approve only after checking the candidate’s identity and physical presence.</p><div class="row"><input id="challengeInput" placeholder="Scan QR URL or paste challenge"><input id="centreId" value="DAMS_TVM" placeholder="Centre ID"><button id="approveBtn">Approve candidate</button><button id="rejectBtn" class="danger">Reject</button></div><div class="row"><button id="scanBtn">Start camera scan</button><button id="stopScanBtn" class="secondary">Stop scan</button></div><video id="camera" playsinline></video><div id="cameraMsg"></div><div id="actionMsg" class="notice">No candidate selected.</div></section>
+<section class="panel"><div class="row"><h2 class="section-title" style="flex:1">Pending candidates</h2><button id="refreshBtn" class="secondary">Refresh</button></div><div class="table-wrap"><table><thead><tr><th>Candidate</th><th>Exam Window</th><th>Device Session</th><th>Expires</th></tr></thead><tbody id="pendingBody"></tbody></table></div></section>
+<section class="panel"><h2 class="section-title">Active authorizations</h2><div class="table-wrap"><table><thead><tr><th>Candidate</th><th>Centre</th><th>Authorized at</th><th>Last heartbeat</th><th>Action</th></tr></thead><tbody id="sessionsBody"></tbody></table></div></section>
+<section class="panel"><h2 class="section-title">Recent audit events</h2><div class="table-wrap"><table><thead><tr><th>Time</th><th>Candidate</th><th>Event</th><th>Admin</th><th>Details</th></tr></thead><tbody id="auditBody"></tbody></table></div></section><p><button id="logoutAdmin" class="secondary">Admin logout</button></p></div></main><script src="config.js?v=20261112_qr_a"></script><script src="admin.js?v=20261112_qr_a"></script></body></html>
