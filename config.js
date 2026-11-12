@@ -1,8 +1,9 @@
+
 // ==============================
-// config.js - SECURE CBT (TEST DEPLOYMENT)
+// config.js - SECURE CBT
 // ==============================
 
-// Google Apps Script TEST Web App URL
+// Google Apps Script Web App URL
 window.API_URL =
   "https://script.google.com/macros/s/AKfycbwWqrXYBHFoZJCohBix9FXKP4BMkZym-r4arYbybFiXLAf78aBQmQSMFSEAp5okNLJs/exec";
 
