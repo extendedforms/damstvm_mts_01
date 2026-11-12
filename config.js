@@ -79,4 +79,4 @@ window.getExamStatus = function getExamStatus(nowMs = Date.now()) {
 };
 
 // Change this value whenever frontend files are updated.
-window.CACHE_VERSION = "20261112_qr_a";
+window.CACHE_VERSION = "20261112_exams_v1";
