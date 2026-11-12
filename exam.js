@@ -59,10 +59,12 @@ const RESULT_KEY = candidateWindowStorageKey(
 
 if (!cand || !cand.token || !activeCandidateId) {
   location.replace('login.html');
+  throw new Error('Candidate session missing; redirecting to login.');
+}
 
-  throw new Error(
-    'Candidate session missing; redirecting to login.'
-  );
+if (!cand.accessToken || !cand.deviceSessionId) {
+  location.replace('qr-wait.html?renew=1');
+  throw new Error('Centre authorization missing; redirecting to QR authorization.');
 }
 
 if (localStorage.getItem(SUBMITTED_KEY) === 'yes') {
@@ -234,6 +236,13 @@ function pad2(n) {
 }
 
 async function postAPI(payload, options = {}) {
+  if (['startExam','submit','violation','examHeartbeat'].includes(payload.action)) {
+    payload = Object.assign({}, payload, {
+      accessToken: cand.accessToken || '',
+      deviceSessionId: cand.deviceSessionId || ''
+    });
+  }
+
   const API_URL =
     window.API_URL ||
     window.EXAM_API_URL ||
@@ -1053,6 +1062,27 @@ async function submitExam(
   }
 }
 
+let centreHeartbeatTimer = null;
+let centreHeartbeatBusy = false;
+function startCentreHeartbeat() {
+  if (centreHeartbeatTimer) clearInterval(centreHeartbeatTimer);
+  centreHeartbeatTimer = setInterval(async () => {
+    if (!attemptReady || centreHeartbeatBusy || submitted) return;
+    centreHeartbeatBusy = true;
+    try {
+      await postAPI({action:'examHeartbeat',token:cand.token,candidateId:activeCandidateId},{timeoutMs:15000});
+    } catch (err) {
+      if (centreHeartbeatTimer) clearInterval(centreHeartbeatTimer);
+      centreHeartbeatTimer = null;
+      [submitBtn,prevBtn,nextBtn,clearBtn,markBtn].forEach(b=>{if(b)b.disabled=true;});
+      if (qTitle) qTitle.textContent = 'Centre authorization interrupted';
+      if (qText) qText.textContent = 'Your authorization is no longer active. Your locally saved answers have been retained in this browser. Contact the invigilator and generate a new QR authorization before continuing.';
+      alert('Centre authorization expired or was revoked. You will be returned to QR authorization.');
+      location.replace('qr-wait.html?renew=1');
+    } finally { centreHeartbeatBusy = false; }
+  }, 45000);
+}
+
 async function init() {
   if (qTitle) {
     qTitle.textContent = 'Loading questions…';
@@ -1160,6 +1190,7 @@ async function init() {
     );
 
     attemptReady = true;
+    startCentreHeartbeat();
 
     save();
 
