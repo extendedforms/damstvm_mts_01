@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#071a32" />
+  <meta name="theme-color" content="#8E1245" />
   <title>Result History - DAMS Trivandrum Mock Test Series</title>
   <link rel="stylesheet" href="style.css" />
 
@@ -25,7 +25,7 @@
       justify-content: center;
       overflow-x: hidden;
       overflow-y: auto;
-      background: #f3f5f9;
+      background: #F7F3F5;
       color: #26364f;
       font-family: Arial, Helvetica, sans-serif;
     }
@@ -42,7 +42,7 @@
 
     .institution-heading {
       margin: 0 0 5px;
-      color: #174a7c;
+      color: #C2185B;
       text-align: center;
       text-transform: uppercase;
       font-size: clamp(17px, 2.4vw, 24px);
@@ -53,7 +53,7 @@
 
     .result-heading {
       margin: 0 0 13px;
-      color: #0a2342;
+      color: #171717;
       text-align: center;
       font-size: clamp(25px, 3.4vw, 34px);
       line-height: 1.1;
@@ -82,7 +82,7 @@
 
     .result-view-label {
       margin: 0 0 7px;
-      color: #174a7c;
+      color: #C2185B;
       text-align: center;
       font-size: 13px;
       font-weight: 800;
@@ -137,14 +137,14 @@
 
     .history-heading {
       margin: 0;
-      color: #0a2342;
+      color: #171717;
       font-size: 18px;
       font-weight: 900;
     }
 
     .history-count {
       flex: 0 0 auto;
-      color: #174a7c;
+      color: #C2185B;
       font-size: 12px;
       font-weight: 800;
     }
@@ -208,16 +208,16 @@
     }
 
     .history-view-btn {
-      background: #eaf1f8;
-      color: #174a7c;
+      background: #FCE8F0;
+      color: #C2185B;
     }
 
-    .history-view-btn:hover { background: #dce8f4; }
+    .history-view-btn:hover { background: #F7D5E2; }
 
     .history-view-btn:focus-visible,
     .load-more-btn:focus-visible,
     .result-btn:focus-visible {
-      outline: 3px solid rgba(23,74,124,.25);
+      outline: 3px solid rgba(194,24,91,.25);
       outline-offset: 2px;
     }
 
@@ -229,8 +229,8 @@
 
     .load-more-btn {
       min-width: 130px;
-      background: #eaf1f8;
-      color: #174a7c;
+      background: #FCE8F0;
+      color: #C2185B;
     }
 
     .load-more-btn:disabled { opacity: .6; cursor: wait; }
@@ -250,11 +250,38 @@
     }
 
     .result-btn.primary {
-      background: #174a7c;
+      background: #C2185B;
       color: #fff;
     }
 
-    .result-btn.primary:hover { background: #10385f; }
+    .result-btn.primary:hover { background: #8E1245; }
+
+
+    .analysis-section {
+      margin-top: 14px; padding: 15px; border: 1px solid #eadde3;
+      border-radius: 14px; background: #fff;
+    }
+    .analysis-title { margin:0 0 5px; color:#171717; font-size:18px; font-weight:900; }
+    .analysis-note { margin:0 0 12px; color:#687386; font-size:12px; line-height:1.5; }
+    .analysis-status { color:#8E1245; font-size:12px; font-weight:700; min-height:18px; }
+    .subject-list { display:grid; gap:10px; }
+    .subject-card { padding:12px; border:1px solid #eee3e8; border-radius:11px; background:#fff; }
+    .subject-top { display:flex; justify-content:space-between; gap:10px; align-items:center; margin-bottom:8px; }
+    .subject-name { color:#171717; font-weight:900; font-size:14px; }
+    .subject-accuracy { color:#8E1245; font-weight:900; font-size:13px; }
+    .subject-meta { color:#687386; font-size:11px; margin-top:6px; }
+    .bar-track { height:9px; border-radius:20px; background:#f1e9ed; overflow:hidden; }
+    .bar-fill { height:100%; border-radius:20px; background:#C2185B; }
+    .topic-list { display:grid; gap:6px; margin-top:10px; }
+    .topic-row { display:flex; justify-content:space-between; gap:10px; color:#596477; font-size:11px; }
+    .behaviour-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+    .behaviour-card { padding:11px; border:1px solid #eee3e8; border-radius:10px; background:#fff; }
+    .behaviour-label { color:#596477; font-size:11px; line-height:1.35; font-weight:800; }
+    .behaviour-value { color:#171717; font-size:23px; font-weight:900; margin-top:4px; }
+    .behaviour-sub { color:#687386; font-size:10px; margin-top:3px; }
+    .coverage-note { margin-top:9px; color:#687386; font-size:11px; }
+    .history-view-btn:disabled { opacity:.55; cursor:not-allowed; }
+    @media(max-width:760px) { .behaviour-grid {grid-template-columns:repeat(2,minmax(0,1fr));} .analysis-section{padding:11px;} }
 
     @media (max-width: 760px) {
       body.result-page { padding: 8px; }
@@ -307,6 +334,25 @@
       <div class="stat-card"><div class="stat-label">Unattempted</div><div class="stat-value" id="unattempted">-</div></div>
       <div class="stat-card"><div class="stat-label">Time Taken</div><div class="stat-value" id="timeTaken">-</div></div>
       <div class="stat-card"><div class="stat-label">Violations</div><div class="stat-value" id="violations">-</div></div>
+    </section>
+
+    <section class="analysis-section" aria-labelledby="subjectAnalysisHeading">
+      <h2 class="analysis-title" id="subjectAnalysisHeading">Subject-wise Performance</h2>
+      <p class="analysis-note">Correctness and accuracy are calculated securely using the private AnswerKey. Subjects without metadata appear as Unclassified.</p>
+      <div class="analysis-status" id="analysisStatus" role="status" aria-live="polite">Select a result to load its analysis.</div>
+      <div class="subject-list" id="subjectList"></div>
+      <div class="coverage-note" id="metadataCoverage"></div>
+    </section>
+
+    <section class="analysis-section" aria-labelledby="behaviourHeading">
+      <h2 class="analysis-title" id="behaviourHeading">Behavioral Analytics</h2>
+      <p class="analysis-note">Shows answer and review-marker patterns. These are behavioral indicators, not a direct measure of confidence.</p>
+      <div class="behaviour-grid" id="behaviourGrid">
+        <div class="behaviour-card"><div class="behaviour-label">Answered · Not marked</div><div class="behaviour-value">-</div></div>
+        <div class="behaviour-card"><div class="behaviour-label">Answered · Marked</div><div class="behaviour-value">-</div></div>
+        <div class="behaviour-card"><div class="behaviour-label">Review · Unanswered</div><div class="behaviour-value">-</div></div>
+        <div class="behaviour-card"><div class="behaviour-label">Unanswered · Not marked</div><div class="behaviour-value">-</div></div>
+      </div>
     </section>
 
     <section class="history-section" aria-labelledby="historyHeading">
@@ -392,6 +438,106 @@
       setText('resultViewLabel', label || 'Selected result', 'Selected result');
     }
 
+
+    function clearAnalysis(message) {
+      document.getElementById('subjectList').replaceChildren();
+      document.getElementById('metadataCoverage').textContent = '';
+      document.getElementById('analysisStatus').textContent = message || '';
+      const grid = document.getElementById('behaviourGrid');
+      grid.replaceChildren();
+      [
+        'Answered · Not marked','Answered · Marked',
+        'Review · Unanswered','Unanswered · Not marked'
+      ].forEach(function(label) {
+        const card=document.createElement('div'); card.className='behaviour-card';
+        const title=document.createElement('div'); title.className='behaviour-label'; title.textContent=label;
+        const value=document.createElement('div'); value.className='behaviour-value'; value.textContent='-';
+        card.append(title,value); grid.appendChild(card);
+      });
+    }
+
+    function renderAnalysis(data) {
+      const subjectList=document.getElementById('subjectList');
+      subjectList.replaceChildren();
+      const subjects=Array.isArray(data.subjectAnalysis)?data.subjectAnalysis:[];
+      if (!subjects.length) {
+        document.getElementById('analysisStatus').textContent='No subject analysis data available.';
+      } else {
+        document.getElementById('analysisStatus').textContent='Analysis loaded for this result.';
+      }
+      subjects.forEach(function(subject) {
+        const card=document.createElement('article'); card.className='subject-card';
+        const top=document.createElement('div'); top.className='subject-top';
+        const name=document.createElement('div'); name.className='subject-name'; name.textContent=subject.subject || 'Unclassified';
+        const accuracy=document.createElement('div'); accuracy.className='subject-accuracy';
+        accuracy.textContent=Number(subject.accuracy || 0).toFixed(1)+'% accuracy';
+        top.append(name,accuracy); card.appendChild(top);
+        const track=document.createElement('div'); track.className='bar-track';
+        const fill=document.createElement('div'); fill.className='bar-fill';
+        fill.style.width=Math.max(0,Math.min(100,Number(subject.accuracy)||0))+'%';
+        track.appendChild(fill); card.appendChild(track);
+        const meta=document.createElement('div'); meta.className='subject-meta';
+        meta.textContent='Correct '+(subject.correct||0)+' · Wrong '+(subject.wrong||0)+' · Unattempted '+(subject.unattempted||0)+' · Total '+(subject.total||0);
+        card.appendChild(meta);
+        if (Array.isArray(subject.topics) && subject.topics.length) {
+          const topics=document.createElement('div'); topics.className='topic-list';
+          subject.topics.forEach(function(topic) {
+            const row=document.createElement('div'); row.className='topic-row';
+            const left=document.createElement('span'); left.textContent=topic.topic;
+            const right=document.createElement('strong'); right.textContent=(topic.correct||0)+' correct / '+(topic.attempted||0)+' attempted · '+Number(topic.accuracy||0).toFixed(1)+'%';
+            row.append(left,right); topics.appendChild(row);
+          });
+          card.appendChild(topics);
+        }
+        subjectList.appendChild(card);
+      });
+      const coverage=data.metadataCoverage || {};
+      document.getElementById('metadataCoverage').textContent =
+        'Question metadata coverage: '+Number(coverage.classified||0)+' / '+Number(coverage.total||0)+
+        ' questions classified; '+Number(coverage.unclassified||0)+' unclassified.';
+
+      const b=data.behaviouralAnalysis || {};
+      const cards=[
+        ['Answered · Not marked',b.answeredUnmarked],
+        ['Answered · Marked',b.answeredMarked],
+        ['Review · Unanswered',b.reviewUnanswered],
+        ['Unanswered · Not marked',b.unanswered]
+      ];
+      const grid=document.getElementById('behaviourGrid'); grid.replaceChildren();
+      cards.forEach(function(entry) {
+        const stats=entry[1]||{};
+        const card=document.createElement('div'); card.className='behaviour-card';
+        const label=document.createElement('div'); label.className='behaviour-label'; label.textContent=entry[0];
+        const value=document.createElement('div'); value.className='behaviour-value'; value.textContent=String(stats.total||0);
+        card.append(label,value);
+        if (stats.correct !== undefined) {
+          const sub=document.createElement('div'); sub.className='behaviour-sub';
+          sub.textContent='Correct '+(stats.correct||0)+' · Wrong '+(stats.wrong||0);
+          card.appendChild(sub);
+        }
+        grid.appendChild(card);
+      });
+    }
+
+    async function loadAnalysis(examWindowId) {
+      clearAnalysis('Loading analysis for selected result...');
+      if (!examWindowId) {
+        clearAnalysis('Analysis unavailable for this legacy result (missing exam window ID).');
+        return;
+      }
+      try {
+        const response=await fetch(window.API_URL || window.SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},cache:'no-store',body:JSON.stringify({
+          action:'getResultAnalysis', token:candidate.token, candidateId:candidateId, examWindowId:examWindowId
+        })});
+        const raw=await response.text();
+        let data; try {data=JSON.parse(raw);} catch(e){throw new Error('Invalid analysis response from server.');}
+        if (!response.ok || data.ok===false) throw new Error(data.error || 'Analysis request failed.');
+        renderAnalysis(data);
+      } catch(error) {
+        clearAnalysis('Could not load analysis: '+(error.message || String(error)));
+      }
+    }
+
     function addHistoryItem(item, index) {
       const row = document.createElement('article');
       row.className = 'history-item';
@@ -423,8 +569,11 @@
       viewButton.className = 'history-view-btn';
       viewButton.textContent = 'View Result';
       viewButton.setAttribute('aria-label', 'View result from ' + formatHistoryDate(item));
+      viewButton.disabled = item.canOpen === false || !item.examWindowId;
+      if (viewButton.disabled) viewButton.title = 'Detailed analysis is unavailable for this legacy result.';
       viewButton.addEventListener('click', function() {
         renderResult(item, 'Selected historical result · ' + formatHistoryDate(item));
+        loadAnalysis(item.examWindowId);
         window.scrollTo({top:0, behavior:'smooth'});
       });
       row.appendChild(viewButton);
@@ -557,6 +706,8 @@
         renderResult({}, 'Latest result');
       }
 
+      if (localResult.examWindowId) loadAnalysis(localResult.examWindowId);
+      else clearAnalysis('Select a result from history to load subject and behavioral analysis.');
       loadHistory(false);
     })();
   </script>
