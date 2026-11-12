@@ -1,14 +1,459 @@
-/* Candidate-scoped result display. The server remains the source of truth. */
-(function(){'use strict';
-function parse(v){try{return v?JSON.parse(v):null;}catch(_){return null;}}
-function val(){for(var i=0;i<arguments.length;i++){if(arguments[i]!==undefined&&arguments[i]!==null&&arguments[i]!=='')return arguments[i];}return null;}
-function set(id,v,fallback){var el=document.getElementById(id);if(el)el.textContent=(v===null||v===undefined||v==='')?(fallback===undefined?'-':fallback):String(v);}
-function fmtTime(v){var n=Number(v);if(!Number.isFinite(n)||n<0)return '-';n=Math.floor(n);var h=Math.floor(n/3600),m=Math.floor(n%3600/60),s=n%60;return h?h+' hr '+m+' min '+s+' sec':m?m+' min '+s+' sec':s+' sec';}
-function candidate(){return parse(sessionStorage.getItem('neet_candidate')||'')||{};}
-function windowKey(c){var w=String(c.examWindowId||((Number.isFinite(window.EXAM_START_MS)?window.EXAM_START_MS:0)+'_'+(Number.isFinite(window.EXAM_END_MS)?window.EXAM_END_MS:0)));return 'neet_result_'+encodeURIComponent(String(c.candidateId||c.id||''))+'_'+encodeURIComponent(w);}
-function status(t,bad){var e=document.getElementById('statusNote');if(e){e.textContent=t;e.classList.toggle('error',!!bad);}}
-function render(c,r){r=r||{};set('candName',val(r.name,c.name));set('candId',val(r.candidateId,c.candidateId,c.id));set('candEmail',val(r.email,c.email));set('candPhone',val(r.phone,c.phone));set('score',val(r.score,r.marks,r.totalScore));set('correct',val(r.correct,r.correctCount));set('wrong',val(r.wrong,r.wrongCount));set('unattempted',val(r.unattempted,r.unanswered));set('timeTaken',fmtTime(val(r.timeTakenSec,r.timeTaken)));set('violations',val(r.violations,r.violationCount), '0');if(val(r.score,r.marks,r.totalScore)!==null)status('Exam result loaded successfully.',false);else status('No submitted result found for this candidate in the current exam window.',true);}
-async function fetchCurrentResult(c){var url=window.API_URL||window.SCRIPT_URL;if(!url||!c.token)throw new Error('Candidate session or API_URL is missing.');var resp=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'getResult',token:c.token,candidateId:c.candidateId,examWindowId:c.examWindowId||''}),cache:'no-store'});var raw=await resp.text(),d;try{d=JSON.parse(raw);}catch(_){throw new Error('Invalid result server response.');}if(!resp.ok||d.ok===false)throw new Error(d.error||'Unable to retrieve result.');return d;}
-window.backToLogin=function(){var c=candidate();if(c.token){var url=window.API_URL||window.SCRIPT_URL;fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'cancelCandidateLogin',token:c.token,candidateId:c.candidateId}),cache:'no-store'}).catch(function(){});}sessionStorage.removeItem('neet_candidate');sessionStorage.removeItem('neet_qr_challenge');location.replace('login.html?v='+Date.now());};
-document.addEventListener('DOMContentLoaded',async function(){var c=candidate();var stored=parse(localStorage.getItem(windowKey(c))||'')||{};if(val(stored.score,stored.marks,stored.totalScore)!==null){render(c,stored);return;}status('Retrieving your saved result…',false);try{var r=await fetchCurrentResult(c);render(c,r);}catch(e){render(c,{});status(e.message||'Unable to load result.',true);}});
+/* ZENITH NEET CBT — Result page frontend
+ * Replace the existing result.js with this file.
+ * Uses the existing result.html element IDs and Code.gs action contracts.
+ * The server remains authoritative; no AnswerKey is sent to the browser.
+ */
+(function () {
+  'use strict';
+
+  var API = window.API_URL || window.SCRIPT_URL || '';
+  var state = {
+    candidate: null,
+    history: [],
+    selectedWindowId: '',
+    requestId: 0
+  };
+
+  function parseJson(value) {
+    try { return value ? JSON.parse(value) : null; }
+    catch (_) { return null; }
+  }
+
+  function firstValue() {
+    for (var i = 0; i < arguments.length; i++) {
+      if (arguments[i] !== undefined && arguments[i] !== null && arguments[i] !== '') {
+        return arguments[i];
+      }
+    }
+    return null;
+  }
+
+  function byId(id) {
+    return document.getElementById(id);
+  }
+
+  function setText(id, value, fallback) {
+    var el = byId(id);
+    if (!el) return;
+    el.textContent = value === null || value === undefined || value === ''
+      ? (fallback === undefined ? '-' : fallback)
+      : String(value);
+  }
+
+  function setStatus(id, message, isError) {
+    var el = byId(id);
+    if (!el) return;
+    el.textContent = message || '';
+    el.classList.toggle('error', !!isError);
+  }
+
+  function candidateFromSession() {
+    return parseJson(sessionStorage.getItem('neet_candidate') || '') || {};
+  }
+
+  function fmtTime(value) {
+    var n = Number(value);
+    if (!Number.isFinite(n) || n < 0) return '-';
+    n = Math.floor(n);
+    var h = Math.floor(n / 3600);
+    var m = Math.floor((n % 3600) / 60);
+    var s = n % 60;
+    if (h) return h + ' hr ' + m + ' min ' + s + ' sec';
+    if (m) return m + ' min ' + s + ' sec';
+    return s + ' sec';
+  }
+
+  function fmtNumber(value, digits) {
+    var n = Number(value);
+    if (!Number.isFinite(n)) return '-';
+    return digits === undefined ? String(n) : n.toFixed(digits);
+  }
+
+  function escapeText(value) {
+    return String(value === undefined || value === null ? '' : value);
+  }
+
+  async function api(action, payload) {
+    if (!API) throw new Error('API_URL / SCRIPT_URL is missing in config.js.');
+    if (!state.candidate || !state.candidate.token) {
+      throw new Error('Candidate login session is missing. Please log in again.');
+    }
+
+    var body = Object.assign({}, payload || {}, {
+      action: action,
+      token: state.candidate.token,
+      candidateId: state.candidate.candidateId || state.candidate.id || ''
+    });
+
+    var response = await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(body),
+      cache: 'no-store',
+      redirect: 'follow'
+    });
+
+    var raw = await response.text();
+    var data;
+    try { data = JSON.parse(raw); }
+    catch (_) { throw new Error('The server returned an invalid response. Check the Apps Script deployment.'); }
+
+    if (!response.ok || !data || data.ok === false) {
+      throw new Error(data && (data.error || data.message)
+        ? (data.error || data.message)
+        : 'Unable to complete ' + action + '.');
+    }
+    return data;
+  }
+
+  function renderResult(result) {
+    var r = result || {};
+    var c = state.candidate || {};
+    setText('candName', firstValue(r.name, c.name));
+    setText('candId', firstValue(r.candidateId, c.candidateId, c.id));
+    setText('candEmail', firstValue(r.email, c.email));
+    setText('candPhone', firstValue(r.phone, c.phone));
+    setText('score', firstValue(r.score, r.marks, r.totalScore));
+    setText('correct', firstValue(r.correct, r.correctCount));
+    setText('wrong', firstValue(r.wrong, r.wrongCount));
+    setText('unattempted', firstValue(r.unattempted, r.unanswered));
+    setText('timeTaken', fmtTime(firstValue(r.timeTakenSec, r.timeTaken)));
+    setText('violations', firstValue(r.violations, r.violationCount), '0');
+  }
+
+  function metric(label, value) {
+    var wrapper = document.createElement('div');
+    wrapper.className = 'history-metric';
+    var small = document.createElement('small');
+    small.textContent = label;
+    var strong = document.createElement('strong');
+    strong.textContent = value === undefined || value === null ? '-' : String(value);
+    wrapper.appendChild(small);
+    wrapper.appendChild(strong);
+    return wrapper;
+  }
+
+  function renderHistory(history) {
+    var list = byId('historyList');
+    if (!list) return;
+    list.textContent = '';
+
+    if (!Array.isArray(history) || !history.length) {
+      var empty = document.createElement('div');
+      empty.className = 'empty-state';
+      empty.textContent = 'No previous submitted examination results were found for this candidate.';
+      list.appendChild(empty);
+      setStatus('historyStatus', 'No result history available.', false);
+      return;
+    }
+
+    history.forEach(function (item) {
+      var row = document.createElement('div');
+      row.className = 'history-item' +
+        (item.examWindowId && item.examWindowId === state.selectedWindowId ? ' selected' : '');
+
+      var date = document.createElement('div');
+      date.className = 'history-date';
+      date.textContent = (item.examName ? item.examName + ' — ' : '') +
+        (item.submittedAt || item.submittedAtISO || 'Submitted examination');
+      row.appendChild(date);
+
+      row.appendChild(metric('Score', fmtNumber(item.score)));
+      row.appendChild(metric('Correct / Wrong', fmtNumber(item.correct) + ' / ' + fmtNumber(item.wrong)));
+      row.appendChild(metric('Unattempted', fmtNumber(item.unattempted)));
+
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'history-select';
+      button.textContent = 'View Result';
+      button.disabled = !item.examWindowId;
+      button.title = item.examWindowId ? 'View this examination result and analysis' :
+        'This older record has no verifiable exam window ID.';
+      button.addEventListener('click', function () {
+        if (item.examWindowId) selectHistoryResult(item);
+      });
+      row.appendChild(button);
+      list.appendChild(row);
+    });
+
+    setStatus('historyStatus', 'Showing ' + history.length + ' of ' +
+      (state.historyTotal || history.length) + ' submitted result(s).', false);
+  }
+
+  async function loadHistory() {
+    setStatus('historyStatus', 'Loading result history…', false);
+    try {
+      var data = await api('getResultHistory', { limit: 100, offset: 0 });
+      state.history = Array.isArray(data.history) ? data.history : [];
+      state.historyTotal = Number(data.totalCount || state.history.length);
+      renderHistory(state.history);
+    } catch (error) {
+      setStatus('historyStatus', error.message || 'Unable to load result history.', true);
+      var list = byId('historyList');
+      if (list) list.textContent = '';
+    }
+  }
+
+  function appendAnalysisRow(container, title, detail, percentage) {
+    var row = document.createElement('div');
+    row.className = 'analysis-row';
+
+    var heading = document.createElement('div');
+    heading.className = 'analysis-row-title';
+    var name = document.createElement('span');
+    name.textContent = title;
+    var pct = document.createElement('strong');
+    pct.textContent = percentage === null || percentage === undefined ? '' : percentage + '%';
+    heading.appendChild(name);
+    heading.appendChild(pct);
+    row.appendChild(heading);
+
+    var details = document.createElement('div');
+    details.className = 'analysis-details';
+    details.textContent = detail;
+    row.appendChild(details);
+
+    if (percentage !== null && percentage !== undefined && Number.isFinite(Number(percentage))) {
+      var track = document.createElement('div');
+      track.className = 'progress-track';
+      var fill = document.createElement('div');
+      fill.className = 'progress-fill';
+      fill.style.width = Math.max(0, Math.min(100, Number(percentage))) + '%';
+      track.appendChild(fill);
+      row.appendChild(track);
+    }
+    container.appendChild(row);
+  }
+
+  function renderSubjectAnalysis(subjects) {
+    var container = byId('subjectAnalysis');
+    if (!container) return;
+    container.textContent = '';
+
+    if (!Array.isArray(subjects) || !subjects.length) {
+      var empty = document.createElement('div');
+      empty.className = 'empty-state';
+      empty.textContent = 'Subject analysis is unavailable. Check that QuestionMetadata contains questionId and subject values for this exam.';
+      container.appendChild(empty);
+      return;
+    }
+
+    subjects.forEach(function (subject) {
+      var detail = 'Correct: ' + Number(subject.correct || 0) +
+        ' · Wrong: ' + Number(subject.wrong || 0) +
+        ' · Unattempted: ' + Number(subject.unattempted || 0) +
+        ' · Attempted: ' + Number(subject.attempted || 0) + '/' + Number(subject.total || 0);
+      appendAnalysisRow(container, escapeText(subject.subject || 'Unclassified'),
+        detail, Number(subject.accuracy || 0));
+
+      if (Array.isArray(subject.topics) && subject.topics.length) {
+        subject.topics.forEach(function (topic) {
+          var topicDetail = 'Correct: ' + Number(topic.correct || 0) +
+            ' · Wrong: ' + Number(topic.wrong || 0) +
+            ' · Unattempted: ' + Number(topic.unattempted || 0) +
+            ' · Attempted: ' + Number(topic.attempted || 0) + '/' + Number(topic.total || 0);
+          appendAnalysisRow(container, '↳ ' + escapeText(topic.topic || 'Topic'),
+            topicDetail, Number(topic.accuracy || 0));
+        });
+      }
+    });
+  }
+
+  function behaviourItem(label, value) {
+    var item = document.createElement('div');
+    item.className = 'behaviour-item';
+    var name = document.createElement('span');
+    name.textContent = label;
+    var strong = document.createElement('strong');
+    strong.textContent = String(value);
+    item.appendChild(name);
+    item.appendChild(strong);
+    return item;
+  }
+
+  function renderBehaviour(behaviour) {
+    var container = byId('behaviourAnalysis');
+    if (!container) return;
+    container.textContent = '';
+    var b = behaviour || {};
+    var list = document.createElement('div');
+    list.className = 'behaviour-list';
+
+    var au = b.answeredUnmarked || {};
+    var am = b.answeredMarked || {};
+    var ru = b.reviewUnanswered || {};
+    var un = b.unanswered || {};
+
+    list.appendChild(behaviourItem('Answered — not marked for review',
+      Number(au.total || 0) + ' (Correct ' + Number(au.correct || 0) +
+      ', Wrong ' + Number(au.wrong || 0) + ')'));
+    list.appendChild(behaviourItem('Answered — marked for review',
+      Number(am.total || 0) + ' (Correct ' + Number(am.correct || 0) +
+      ', Wrong ' + Number(am.wrong || 0) + ')'));
+    list.appendChild(behaviourItem('Unanswered — marked for review', Number(ru.total || 0)));
+    list.appendChild(behaviourItem('Unanswered — not marked for review', Number(un.total || 0)));
+    container.appendChild(list);
+  }
+
+  function renderAnalysis(data) {
+    var content = byId('analysisContent');
+    var status = byId('analysisStatus');
+    if (status) status.hidden = true;
+    if (content) content.hidden = false;
+
+    renderSubjectAnalysis(data.subjectAnalysis);
+    renderBehaviour(data.behaviouralAnalysis);
+
+    var coverage = data.metadataCoverage || {};
+    var note = 'Question metadata coverage: ' + Number(coverage.classified || 0) +
+      ' classified / ' + Number(coverage.total || 0) + ' questions; ' +
+      Number(coverage.unclassified || 0) + ' unclassified.';
+    if (data.interpretation) note += ' ' + data.interpretation;
+    setText('metadataNote', note);
+  }
+
+  function clearAnalysis(message) {
+    var content = byId('analysisContent');
+    var status = byId('analysisStatus');
+    if (content) content.hidden = true;
+    if (status) {
+      status.hidden = false;
+      status.textContent = message || 'Select a result to load performance analysis.';
+      status.classList.remove('error');
+    }
+  }
+
+  async function loadAnalysis(windowId, examName) {
+    var requestId = ++state.requestId;
+    state.selectedWindowId = windowId;
+    renderHistory(state.history);
+
+    var subtitle = byId('analysisSubtitle');
+    if (subtitle) subtitle.textContent = 'Analysis for ' + (examName || windowId) + '.';
+    var content = byId('analysisContent');
+    var status = byId('analysisStatus');
+    if (content) content.hidden = true;
+    if (status) {
+      status.hidden = false;
+      status.textContent = 'Loading performance analysis…';
+      status.classList.remove('error');
+    }
+
+    try {
+      var data = await api('getResultAnalysis', { examWindowId: windowId });
+      if (requestId !== state.requestId) return;
+      renderAnalysis(data);
+    } catch (error) {
+      if (requestId !== state.requestId) return;
+      if (status) {
+        status.hidden = false;
+        status.textContent = error.message || 'Unable to load performance analysis.';
+        status.classList.add('error');
+      }
+      if (content) content.hidden = true;
+    }
+  }
+
+  async function selectHistoryResult(item) {
+    if (!item || !item.examWindowId) return;
+    state.selectedWindowId = item.examWindowId;
+    setStatus('statusNote', 'Loading selected examination result…', false);
+
+    try {
+      var result = await api('getResult', { examWindowId: item.examWindowId });
+      renderResult(result);
+      setStatus('statusNote', 'Selected examination result loaded successfully.', false);
+      await loadAnalysis(item.examWindowId, item.examName || item.submittedAt);
+    } catch (error) {
+      setStatus('statusNote', error.message || 'Unable to load selected result.', true);
+      clearAnalysis(error.message || 'Unable to load analysis.');
+    }
+  }
+
+  async function loadCurrentResult() {
+    var c = state.candidate;
+    var stored = parseJson(localStorage.getItem(resultStorageKey(c)) || '');
+    if (stored && firstValue(stored.score, stored.marks, stored.totalScore) !== null) {
+      renderResult(stored);
+    }
+
+    setStatus('statusNote', 'Retrieving your latest result…', false);
+    try {
+      // If login/session state includes an examWindowId, request that exact
+      // window. Otherwise Code.gs resolves the server's default exam window.
+      var payload = {};
+      if (c.examWindowId) payload.examWindowId = c.examWindowId;
+      var result = await api('getResult', payload);
+      renderResult(result);
+      if (result.examWindowId) state.selectedWindowId = result.examWindowId;
+      setStatus('statusNote', 'Exam result loaded successfully.', false);
+    } catch (error) {
+      if (!stored || firstValue(stored.score, stored.marks, stored.totalScore) === null) {
+        renderResult({});
+        setStatus('statusNote', error.message || 'No result found for the current exam window.', true);
+      } else {
+        setStatus('statusNote', 'Showing the locally saved result. Server refresh failed: ' +
+          (error.message || 'Unknown error'), true);
+      }
+    }
+  }
+
+  function resultStorageKey(candidate) {
+    var c = candidate || {};
+    var windowId = String(c.examWindowId ||
+      ((Number.isFinite(window.EXAM_START_MS) ? window.EXAM_START_MS : 0) + '_' +
+       (Number.isFinite(window.EXAM_END_MS) ? window.EXAM_END_MS : 0)));
+    return 'neet_result_' + encodeURIComponent(String(c.candidateId || c.id || '')) +
+      '_' + encodeURIComponent(windowId);
+  }
+
+  window.backToLogin = function () {
+    var c = state.candidate || candidateFromSession();
+    if (c.token && API) {
+      fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'cancelCandidateLogin',
+          token: c.token,
+          candidateId: c.candidateId || c.id || ''
+        }),
+        cache: 'no-store'
+      }).catch(function () {});
+    }
+    sessionStorage.removeItem('neet_candidate');
+    sessionStorage.removeItem('neet_qr_challenge');
+    location.replace('login.html?v=' + Date.now());
+  };
+
+  document.addEventListener('DOMContentLoaded', async function () {
+    state.candidate = candidateFromSession();
+
+    if (!state.candidate.token) {
+      setStatus('statusNote', 'Candidate session not found. Please log in again.', true);
+      setStatus('historyStatus', 'Login required to view result history.', true);
+      clearAnalysis('Login required to view performance analysis.');
+      return;
+    }
+
+    clearAnalysis('Select a result to load performance analysis.');
+    await Promise.all([
+      loadCurrentResult(),
+      loadHistory()
+    ]);
+
+    // History is sorted newest-first by the server. Prefer its newest
+    // verifiable record so the page shows the candidate's latest submission,
+    // even when the server's default exam window is an older examination.
+    if (state.history.length && state.history[0].examWindowId) {
+      await selectHistoryResult(state.history[0]);
+    } else if (state.selectedWindowId) {
+      var current = state.history.find(function (item) {
+        return item.examWindowId === state.selectedWindowId;
+      });
+      if (current) {
+        await loadAnalysis(current.examWindowId, current.examName || current.submittedAt);
+      }
+    }
+  });
 })();
