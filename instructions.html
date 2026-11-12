@@ -1,3 +1,75 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DAMS TRIVANDRUM — Exam Instructions</title><style>*{box-sizing:border-box}body{margin:0;background:#eef3f9;color:#172033;font-family:Arial,sans-serif}.topbar{padding:18px 22px;background:#003b66;color:#fff;font-weight:800}.card{max-width:900px;margin:28px auto;background:#fff;padding:30px;border-radius:14px;box-shadow:0 4px 18px #0001}h2{margin-top:0;font-size:30px}.candidate{padding:14px;background:#f4f7fb;border-radius:10px;line-height:1.6}ul{font-size:17px;line-height:1.8;padding-left:25px}.meta{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 20px}.pill{padding:10px 12px;background:#eef2f7;border-radius:8px}.btn{padding:13px 22px;border:0;border-radius:9px;background:#003b66;color:#fff;font-size:16px;font-weight:800;cursor:pointer}.btn:disabled{opacity:.45;cursor:not-allowed}.notice{font-weight:700;margin:12px 0;padding:12px;border-radius:8px;background:#eef3f9}.notice.error{background:#fff0f0;color:#a11}@media(max-width:700px){.card{margin:16px 12px;padding:22px 18px}h2{font-size:26px}ul{font-size:16px}}</style></head><body><header class="topbar">DAMS TRIVANDRUM — ZENITH NEET PG / INICET MOCK TEST SERIES</header><main class="card"><h2>Examination Instructions</h2><div class="candidate" id="candidateInfo">Loading candidate…</div><div class="meta"><div class="pill">Start (IST): <b id="startIST">--</b></div><div class="pill">End (IST): <b id="endIST">--</b></div><div class="pill">Status: <b id="statusTxt">Checking…</b></div></div><ul><li>Read each question carefully before answering.</li><li>Do not refresh or close the tab during the exam.</li><li>Tab switching or minimizing the browser may be counted as violations.</li><li>Use of multiple devices during the examination is strictly prohibited.</li><li>Click Submit only when you are finished.</li><li>Logout and close the Exam page once finished.</li><li>Remember Candidate ID to check the result.</li><li>Centre authorization is tied to this browser tab and may be revoked by the invigilator.</li></ul><label><input id="agree" type="checkbox"> I have read and understood the instructions.</label><p><button class="btn" id="startBtn" disabled>Start Exam</button></p><div id="msg" class="notice">Verifying centre authorization…</div><p><a href="result.html">View Previous Results</a> · <a href="#" id="logoutLink">Logout</a></p></main><script src="config.js?v=20261112_qr_a"></script><script>
-'use strict';(function(){const $=id=>document.getElementById(id);function read(){try{return JSON.parse(sessionStorage.getItem('neet_candidate')||'null');}catch(_){return null;}}const c=read();if(!c||!c.token||!c.accessToken||!c.deviceSessionId){location.replace('qr-wait.html?renew=1');return;}$('candidateInfo').textContent='Name: '+(c.name||'')+' | Candidate ID: '+c.candidateId+' | Email: '+(c.email||'');function say(t,bad){$('msg').textContent=t;$('msg').classList.toggle('error',!!bad);}async function api(payload){const r=await fetch(window.API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload),cache:'no-store'});const t=await r.text();let d;try{d=JSON.parse(t);}catch(_){throw new Error('Invalid server response');}if(!r.ok||d.ok===false)throw new Error(d.error||'Request failed');return d;}async function check(){try{const d=await api({action:'checkExamAccess',token:c.token,candidateId:c.candidateId,accessToken:c.accessToken,deviceSessionId:c.deviceSessionId});if(!d.authorized)throw new Error('Centre authorization is not active');$('statusTxt').textContent='Authorized';say('Centre authorization confirmed. Wait for the scheduled exam window, then start.',false);tick();}catch(e){$('statusTxt').textContent='Not authorized';$('startBtn').disabled=true;say(e.message+' Please re-authorize using the QR code.',true);setTimeout(()=>location.replace('qr-wait.html?renew=1'),1800);}}function tick(){const s=window.EXAM_START_MS,e=window.EXAM_END_MS,now=Date.now();$('startIST').textContent=window.formatIST?window.formatIST(s):new Date(s).toLocaleString();$('endIST').textContent=window.formatIST?window.formatIST(e):new Date(e).toLocaleString();const open=Number.isFinite(s)&&Number.isFinite(e)&&now>=s&&now<=e;$('startBtn').disabled=!open||!$('agree').checked;say(open?'You are authorized. You may start the exam.':'Exam is not currently open. Your authorization is saved for this browser session.',false);} $('agree').addEventListener('change',tick);$('startBtn').addEventListener('click',async()=>{try{const d=await api({action:'checkExamAccess',token:c.token,candidateId:c.candidateId,accessToken:c.accessToken,deviceSessionId:c.deviceSessionId});if(!d.authorized)throw new Error('Authorization revoked');location.replace('exam.html?v=20261112_qr_a');}catch(e){say(e.message,true);$('startBtn').disabled=true;}});$('logoutLink').addEventListener('click',async e=>{e.preventDefault();try{await api({action:'cancelCandidateLogin',token:c.token,candidateId:c.candidateId});}catch(_){}sessionStorage.removeItem('neet_candidate');sessionStorage.removeItem('neet_qr_challenge');location.replace('login.html');});check();setInterval(tick,1000);})();
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#071a32"><title>Examination Instructions - DAMS CBT</title>
+<style>
+*{box-sizing:border-box}body{margin:0;padding:20px;background:#f2f5f9;color:#172b45;font-family:Arial,sans-serif}
+.topbar{padding:16px 20px;background:#003b66;color:#fff;font-weight:800;text-align:center}
+.card{max-width:760px;margin:28px auto;padding:28px;background:#fff;border:1px solid #dce4ee;border-radius:16px;box-shadow:0 10px 30px #10243d12}
+h1{margin:0 0 16px;color:#0a2342}h2{font-size:19px}.candidate,.exam-meta,.notice{padding:13px 15px;border-radius:9px;background:#edf3f9;margin:12px 0;line-height:1.55}
+.exam-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px}.notice.error{background:#fff0f0;color:#a11}
+li{margin:10px 0;line-height:1.45}label{display:flex;gap:10px;align-items:flex-start;margin:20px 0;font-weight:600}
+button{padding:13px 22px;border:0;border-radius:9px;background:#123f6b;color:#fff;font-weight:800;cursor:pointer}
+button:disabled{opacity:.45;cursor:not-allowed}a{color:#174a7c}
+@media(max-width:560px){.card{margin:18px 0;padding:20px 17px}.exam-meta{grid-template-columns:1fr}}
+</style></head><body>
+<header class="topbar">DAMS TRIVANDRUM — ZENITH NEET PG / INICET MOCK TEST SERIES</header>
+<main class="card">
+<h1>Examination Instructions</h1>
+<div class="candidate" id="candidateInfo">Loading candidate…</div>
+<h2 id="examTitle">Selected examination</h2>
+<div class="exam-meta"><div>Start (IST): <b id="startIST">--</b></div><div>End (IST): <b id="endIST">--</b></div><div>Duration: <b id="duration">--</b></div><div>Centre status: <b id="statusTxt">Checking…</b></div></div>
+<ul>
+<li>Read each question carefully before answering.</li><li>Do not refresh or close the tab during the exam.</li>
+<li>Tab switching or minimizing the browser may be counted as violations.</li><li>Use of multiple devices during the examination is strictly prohibited.</li>
+<li>Click Submit only when you are finished.</li><li>Logout and close the Exam page once finished.</li>
+<li>Remember Candidate ID to check the result.</li><li>Centre authorization is tied to this browser session and may be revoked by the invigilator.</li>
+</ul>
+<label><input id="agree" type="checkbox"> I have read and understood the instructions.</label>
+<p><button class="btn" id="startBtn" disabled>Start Exam</button></p>
+<div id="msg" class="notice">Verifying centre authorization…</div>
+<p><a href="result.html">View Previous Results</a> · <a href="#" id="logoutLink">Logout</a> · <a href="exam-selector.html">Change Exam</a></p>
+</main>
+<script src="config.js?v=20261112_exams_v1"></script>
+<script>
+'use strict';
+(function(){
+const $=id=>document.getElementById(id);
+function read(){try{return JSON.parse(sessionStorage.getItem('neet_candidate')||'null');}catch(_){return null;}}
+const c=read();
+if(!c||!c.token||!c.accessToken||!c.deviceSessionId||!c.examWindowId){location.replace('exam-selector.html');return;}
+$('candidateInfo').textContent='Name: '+(c.name||'')+' | Candidate ID: '+c.candidateId+' | Email: '+(c.email||'');
+$('examTitle').textContent=c.examName||'Selected examination';
+function say(t,bad){$('msg').textContent=t;$('msg').classList.toggle('error',!!bad);}
+function fmt(iso){return window.formatIST?window.formatIST(new Date(iso)):new Date(iso).toLocaleString();}
+const startMs=Date.parse(c.examStartISO||'');const endMs=Date.parse(c.examEndISO||'');
+$('startIST').textContent=Number.isFinite(startMs)?fmt(c.examStartISO):'--';
+$('endIST').textContent=Number.isFinite(endMs)?fmt(c.examEndISO):'--';
+$('duration').textContent=String(c.examDurationMin||60)+' minutes';
+async function api(payload){const r=await fetch(window.API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload),cache:'no-store'});const t=await r.text();let d;try{d=JSON.parse(t);}catch(_){throw new Error('Invalid server response');}if(!r.ok||d.ok===false)throw new Error(d.error||'Request failed');return d;}
+async function check(){
+try{
+const d=await api({action:'checkExamAccess',token:c.token,candidateId:c.candidateId,examWindowId:c.examWindowId,accessToken:c.accessToken,deviceSessionId:c.deviceSessionId});
+if(!d.authorized)throw new Error('Centre authorization is not active');
+$('statusTxt').textContent='Authorized';tick();
+}catch(e){$('statusTxt').textContent='Not authorized';$('startBtn').disabled=true;say(e.message+' Please re-authorize using the QR code.',true);setTimeout(()=>location.replace('qr-wait.html?renew=1'),1800);}
+}
+function tick(){
+const now=Date.now();const open=Number.isFinite(startMs)&&Number.isFinite(endMs)&&now>=startMs&&now<=endMs;
+$('startBtn').disabled=!open||!$('agree').checked;
+say(open?'Centre authorization confirmed. You may start the selected examination.':'Centre authorization is active. Wait until the selected exam window opens.',false);
+}
+$('agree').addEventListener('change',tick);
+$('startBtn').addEventListener('click',async()=>{
+try{
+const d=await api({action:'checkExamAccess',token:c.token,candidateId:c.candidateId,examWindowId:c.examWindowId,accessToken:c.accessToken,deviceSessionId:c.deviceSessionId});
+if(!d.authorized)throw new Error('Authorization revoked');
+location.replace('exam.html?v=20261112_exams_v1');
+}catch(e){say(e.message,true);$('startBtn').disabled=true;}
+});
+$('logoutLink').addEventListener('click',async e=>{
+e.preventDefault();try{await api({action:'cancelCandidateLogin',token:c.token,candidateId:c.candidateId});}catch(_){}
+sessionStorage.removeItem('neet_candidate');sessionStorage.removeItem('neet_qr_challenge');location.replace('login.html');
+});
+check();setInterval(tick,1000);
+})();
 </script></body></html>
