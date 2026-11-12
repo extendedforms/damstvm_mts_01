@@ -1,612 +1,1226 @@
 /***********************
-  exam.js (COMPLETE + FIXED)
-  ✅ Keeps: tab-switch + (optional) blur proctoring, image modal zoom,
-           palette states, save state, submit to Apps Script
-  ✅ Includes: IST header + start/end lock + shuffle questions ONLY
-  ✅ FIX: iOS Safari radio delay -> palette updates instantly
-  ✅ FIX: Submit “Network error: Load failed” -> use text/plain (no CORS preflight)
-  ✅ FIX: Result undefined -> compute & send score/correct/wrong/unattempted/timeTakenSec
-  ✅ FIX: iPhone Fullscreen overlay should NOT count as violation
-  ✅ FIX: Wrong answers marking (MARKS_WRONG = -1 works correctly)
-  ✅ FIX: Login/refresh should NOT reset timer or violations (per-candidate+window key)
-  ✅ FIX: startedAt / endedAt sent as exact Indian time using Asia/Kolkata
-  ✅ FIX: violations are posted to Apps Script and saved in Violations sheet
-***********************/
+ * exam.js - SECURE SERVER-SCORED VERSION
+ *
+ * Fixes:
+ * 1. Avoid selecting options when the candidate is scrolling.
+ * 2. Scroll to the question automatically after Next / Previous / palette navigation.
+ * 3. Deduplicate blur + visibility events and keep the server violation count authoritative.
+ * 4. Preload the next question image and decode images asynchronously.
+ *
+ * Questions/options are fetched from Apps Script.
+ * No answer key or client-side scoring is present in this file.
+ ***********************/
 
-function safeParse(s){ try{ return JSON.parse(s) }catch{ return null } }
+'use strict';
 
-// ====== Candidate session ======
-const cand = safeParse(localStorage.getItem("neet_candidate") || "");
-if(!cand || !cand.token){
-  location.replace("login.html");
+function safeParse(s) {
+  try {
+    return JSON.parse(s);
+  } catch (e) {
+    return null;
+  }
 }
 
-// ✅ HARD STOP: if already submitted, do not load exam
-if(localStorage.getItem("neet_submitted") === "yes"){
-  location.replace("result.html");
+// Candidate session is isolated to the current browser tab.
+
+const cand = safeParse(
+  sessionStorage.getItem('neet_candidate') || ''
+);
+
+const activeCandidateId = String(
+  cand?.candidateId || cand?.id || ''
+).trim();
+
+function candidateWindowStorageKey(prefix, candidateId) {
+  const cid = encodeURIComponent(
+    String(candidateId || '').trim()
+  );
+
+  const startMs = Number.isFinite(window.EXAM_START_MS)
+    ? window.EXAM_START_MS
+    : 0;
+
+  const endMs = Number.isFinite(window.EXAM_END_MS)
+    ? window.EXAM_END_MS
+    : 0;
+
+  return `${prefix}_${cid}_${startMs}_${endMs}`;
 }
 
-// ====== iOS fullscreen/overlay violation suppression ======
+const SUBMITTED_KEY = candidateWindowStorageKey(
+  'neet_submitted',
+  activeCandidateId
+);
+
+const RESULT_KEY = candidateWindowStorageKey(
+  'neet_result',
+  activeCandidateId
+);
+
+if (!cand || !cand.token || !activeCandidateId) {
+  location.replace('login.html');
+
+  throw new Error(
+    'Candidate session missing; redirecting to login.'
+  );
+}
+
+if (localStorage.getItem(SUBMITTED_KEY) === 'yes') {
+  location.replace('result.html');
+
+  throw new Error(
+    'This candidate has already submitted; redirecting to result.'
+  );
+}
+
+let Q = [];
+let totalQ = 0;
+let state = null;
+let submitted = false;
+
+let serverEndsAtMs = 0;
+let serverStartedAtMs = 0;
+let serverClockOffsetMs = 0;
+
+let attemptReady = false;
+
 let suppressVioUntil = 0;
-function suppressViolations(ms = 2500){
+let lastViolationAt = 0;
+
+let authoritativeViolationCount = 0;
+let timerIntervalId = null;
+
+function suppressViolations(ms = 2500) {
   suppressVioUntil = Date.now() + ms;
 }
-function canCountViolation(){
+
+function canCountViolation() {
   return Date.now() > suppressVioUntil;
 }
-const IS_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-// ====== Exact Indian Time helper ======
-function formatIndianTime(dateOrMs = Date.now()){
-  const d = typeof dateOrMs === "number" ? new Date(dateOrMs) : dateOrMs;
+const IS_IOS = /iPhone|iPad|iPod/i.test(
+  navigator.userAgent
+);
 
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Asia/Kolkata",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
+function formatIndianTime(dateOrMs = Date.now()) {
+  const d = typeof dateOrMs === 'number'
+    ? new Date(dateOrMs)
+    : dateOrMs;
+
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
     hour12: true
   }).formatToParts(d);
 
-  const get = (type) => parts.find(p => p.type === type)?.value || "";
-  const day = get("day");
-  const month = get("month");
-  const year = get("year");
-  const hour = get("hour");
-  const minute = get("minute");
-  const second = get("second");
-  const dayPeriod = (get("dayPeriod") || "").toUpperCase();
+  const get = t =>
+    parts.find(p => p.type === t)?.value || '';
 
-  return `${day}-${month}-${year} ${hour}:${minute}:${second} ${dayPeriod}`;
+  return `${get('day')}-${get('month')}-${get('year')} ${get('hour')}:${get('minute')}:${get('second')} ${(get('dayPeriod') || '').toUpperCase()}`;
 }
 
-// ====== IST Header (clock + schedule) ======
-const istClock   = document.getElementById("istClock");
-const examStartEl= document.getElementById("examStartIST");
-const examEndEl  = document.getElementById("examEndIST");
+// IST header/schedule are display-only.
+// Server time is authoritative for the attempt.
 
-if (istClock && window.formatIST) {
-  const tickIST = () => { istClock.textContent = window.formatIST(Date.now()); };
-  tickIST();
-  setInterval(tickIST, 1000);
-} else if (istClock) {
-  const tickIST = () => { istClock.textContent = formatIndianTime(Date.now()); };
-  tickIST();
-  setInterval(tickIST, 1000);
-}
+const istClock = document.getElementById('istClock');
+const examStartEl = document.getElementById('examStartIST');
+const examEndEl = document.getElementById('examEndIST');
 
-if (examStartEl && Number.isFinite(window.EXAM_START_MS) && window.formatIST) {
-  examStartEl.textContent = window.formatIST(window.EXAM_START_MS);
-} else if (examStartEl && Number.isFinite(window.EXAM_START_MS)) {
-  examStartEl.textContent = formatIndianTime(window.EXAM_START_MS);
-} else if (examStartEl) {
-  examStartEl.textContent = "--";
-}
-
-if (examEndEl && Number.isFinite(window.EXAM_END_MS) && window.formatIST) {
-  examEndEl.textContent = window.formatIST(window.EXAM_END_MS);
-} else if (examEndEl && Number.isFinite(window.EXAM_END_MS)) {
-  examEndEl.textContent = formatIndianTime(window.EXAM_END_MS);
-} else if (examEndEl) {
-  examEndEl.textContent = "--";
-}
-
-// ====== Exam Window Lock (IST) ======
-function inWindow(now = Date.now()){
-  if (typeof window.isWithinExamWindow !== "function") return true;
-  return window.isWithinExamWindow(now);
-}
-
-if(!inWindow()){
-  alert("Exam is not live now (check start/end time).");
-  location.replace("instructions.html");
-}
-
-// ====== Questions (from questions.js) ======
-const RAW = window.questions || [];
-
-// ====== Shuffle helpers (seeded) ======
-function xmur3(str) {
-  let h = 1779033703 ^ str.length;
-  for (let i = 0; i < str.length; i++) {
-    h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
-    h = (h << 13) | (h >>> 19);
-  }
-  return function() {
-    h = Math.imul(h ^ (h >>> 16), 2246822507);
-    h = Math.imul(h ^ (h >>> 13), 3266489909);
-    return (h ^= h >>> 16) >>> 0;
+if (istClock) {
+  const tick = () => {
+    istClock.textContent = window.formatIST
+      ? window.formatIST(Date.now())
+      : formatIndianTime(Date.now());
   };
-}
-function mulberry32(a) {
-  return function() {
-    let t = (a += 0x6D2B79F5);
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-function seededShuffle(arr, seedStr) {
-  const seed = xmur3(seedStr)();
-  const rand = mulberry32(seed);
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(rand() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
+
+  tick();
+
+  setInterval(tick, 1000);
 }
 
-// ✅ Build runtime questions with shuffle (QUESTIONS ONLY)
-const seedKey = (cand?.candidateId || cand?.id || "guest") + "|" + (cand?.token || "t");
+if (examStartEl) {
+  examStartEl.textContent = Number.isFinite(window.EXAM_START_MS)
+    ? (
+        window.formatIST
+          ? window.formatIST(window.EXAM_START_MS)
+          : formatIndianTime(window.EXAM_START_MS)
+      )
+    : '--';
+}
 
-let Q = RAW.map((q, idx) => ({
-  ...q,
-  id: q.id ?? (idx + 1),
-  options: [...(q.options || [])]
-}));
+if (examEndEl) {
+  examEndEl.textContent = Number.isFinite(window.EXAM_END_MS)
+    ? (
+        window.formatIST
+          ? window.formatIST(window.EXAM_END_MS)
+          : formatIndianTime(window.EXAM_END_MS)
+      )
+    : '--';
+}
 
-Q = seededShuffle(Q, "Q|" + seedKey);
-const totalQ = Q.length;
+const elTime = document.getElementById('timeLeft');
+const elVio = document.getElementById('vio');
 
-// ====== Elements ======
-const elTime   = document.getElementById("timeLeft");
-const elVio    = document.getElementById("vio");
-const pal      = document.getElementById("pal");
-const qTitle   = document.getElementById("qTitle");
-const qText    = document.getElementById("qText");
-const qImgWrap = document.getElementById("qImgWrap");
-const opts     = document.getElementById("opts");
+const pal = document.getElementById('pal');
+const qTitle = document.getElementById('qTitle');
+const qText = document.getElementById('qText');
+const qImgWrap = document.getElementById('qImgWrap');
+const opts = document.getElementById('opts');
 
-const prevBtn   = document.getElementById("prevBtn");
-const nextBtn   = document.getElementById("nextBtn");
-const clearBtn  = document.getElementById("clearBtn");
-const markBtn   = document.getElementById("markBtn");
-const submitBtn = document.getElementById("submitBtn");
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+const clearBtn = document.getElementById('clearBtn');
+const markBtn = document.getElementById('markBtn');
+const submitBtn = document.getElementById('submitBtn');
 
-// ==============================
-// ✅ STORAGE KEY (Per candidate + exam window)
-// ==============================
-function buildStateKey(){
-  const cid = String(cand?.candidateId || cand?.id || "guest");
-  const startMs = Number.isFinite(window.EXAM_START_MS) ? window.EXAM_START_MS : 0;
-  const endMs   = Number.isFinite(window.EXAM_END_MS) ? window.EXAM_END_MS : 0;
+const imgModal = document.getElementById('imgModal');
+const imgModalPic = document.getElementById('imgModalPic');
+const imgCloseBtn = document.getElementById('imgCloseBtn');
+const imgFullBtn = document.getElementById('imgFullBtn');
+
+function buildStateKey() {
+  const cid = String(
+    cand?.candidateId || cand?.id || 'guest'
+  );
+
+  const startMs = Number.isFinite(window.EXAM_START_MS)
+    ? window.EXAM_START_MS
+    : 0;
+
+  const endMs = Number.isFinite(window.EXAM_END_MS)
+    ? window.EXAM_END_MS
+    : 0;
+
   return `neet_exam_state_${cid}_${startMs}_${endMs}`;
 }
 
 const KEY = buildStateKey();
-const LEGACY_KEY = "neet_exam_state";
 
-const defaultState = () => ({
-  startedAt: Date.now(),
-  current: 0,
-  answers: {},
-  marked: {},
-  violations: 0
-});
+const LEGACY_KEY = 'neet_exam_state';
 
-// Load state (new key)
-let state = safeParse(localStorage.getItem(KEY) || "");
+function defaultState() {
+  return {
+    startedAt: serverStartedAtMs,
+    current: 0,
+    answers: {},
+    marked: {},
+    violations: 0
+  };
+}
 
-// One-time migrate if needed (ONLY if not submitted)
-if(!state && localStorage.getItem("neet_submitted") !== "yes"){
-  const legacy = safeParse(localStorage.getItem(LEGACY_KEY) || "");
-  if(legacy && typeof legacy === "object" && Number.isFinite(legacy.startedAt)){
-    localStorage.setItem(KEY, JSON.stringify(legacy));
-    state = legacy;
+function save() {
+  if (!state) return;
+
+  try {
+    localStorage.setItem(
+      KEY,
+      JSON.stringify(state)
+    );
+  } catch (e) {
+    console.warn(
+      'Could not save exam state locally:',
+      e
+    );
   }
 }
 
-if(!state) state = defaultState();
-
-// Hardening
-if(!Number.isFinite(state.startedAt)) state.startedAt = Date.now();
-if(!Number.isFinite(state.violations)) state.violations = 0;
-if(!state.answers || typeof state.answers !== "object") state.answers = {};
-if(!state.marked  || typeof state.marked  !== "object") state.marked  = {};
-if (!Number.isFinite(state.current) || state.current < 0) state.current = 0;
-if (state.current >= totalQ) state.current = Math.max(0, totalQ - 1);
-
-const durationMs = (window.EXAM_DURATION_MIN || 60) * 60 * 1000;
-
-function save(){ localStorage.setItem(KEY, JSON.stringify(state)); }
-function pad2(n){ return String(n).padStart(2,"0"); }
-
-let submitted = false;
-
-// ====== Scoring ======
-function calcResult(){
-  let correct = 0, wrong = 0, unattempted = 0;
-  for(const q of Q){
-    const picked = state.answers[q.id];
-    if(picked === undefined){ unattempted++; continue; }
-    if(Number(picked) === Number(q.answerIndex)) correct++;
-    else wrong++;
-  }
-  const plus = Number.isFinite(window.MARKS_CORRECT) ? Number(window.MARKS_CORRECT) : 4;
-  let wrongMark = Number.isFinite(window.MARKS_WRONG) ? Number(window.MARKS_WRONG) : -1;
-  if (wrongMark > 0) wrongMark = -wrongMark;
-
-  const score = (correct * plus) + (wrong * wrongMark);
-  const timeTakenSec = Math.max(0, Math.floor((Date.now() - state.startedAt) / 1000));
-  return { score, correct, wrong, unattempted, timeTakenSec };
+function pad2(n) {
+  return String(n).padStart(2, '0');
 }
 
-function updateTimer(){
-  if (submitted) return;
+async function postAPI(payload, options = {}) {
+  const API_URL =
+    window.API_URL ||
+    window.EXAM_API_URL ||
+    '';
 
-  if(!inWindow()){
-    submitExam(true, "TIME_WINDOW_ENDED");
-    return;
+  if (!API_URL) {
+    throw new Error(
+      'API_URL not set in config.js'
+    );
   }
 
-  const elapsed = Date.now() - state.startedAt;
-  const left = Math.max(0, durationMs - elapsed);
+  const ctrl = new AbortController();
 
-  const totalSec = Math.floor(left / 1000);
-  const hh = Math.floor(totalSec / 3600);
-  const mm = Math.floor((totalSec % 3600) / 60);
-  const ss = totalSec % 60;
+  const timeoutMs = Number(options.timeoutMs) || 30000;
 
-  if (elTime) elTime.textContent = `${pad2(hh)}:${pad2(mm)}:${pad2(ss)}`;
+  const timer = setTimeout(
+    () => ctrl.abort(),
+    timeoutMs
+  );
 
-  if(left <= 0) submitExam(true, "DURATION_ENDED");
+  try {
+    const fetchOptions = {
+      method: 'POST',
+
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8'
+      },
+
+      body: JSON.stringify(payload),
+
+      cache: 'no-store',
+
+      signal: ctrl.signal
+    };
+
+    // Useful for small violation reports during page/app transitions.
+
+    if (options.keepalive === true) {
+      fetchOptions.keepalive = true;
+    }
+
+    const res = await fetch(
+      API_URL,
+      fetchOptions
+    );
+
+    const txt = await res.text();
+
+    let data;
+
+    try {
+      data = JSON.parse(txt);
+    } catch (e) {
+      throw new Error(
+        'Apps Script returned an invalid response. Check the web-app deployment.'
+      );
+    }
+
+    if (!res.ok || data.ok === false) {
+      throw new Error(
+        data.error ||
+        data.message ||
+        ('HTTP ' + res.status)
+      );
+    }
+
+    return data;
+
+  } catch (err) {
+    if (err && err.name === 'AbortError') {
+      throw new Error(
+        'The server took too long to respond. Check your internet connection and retry.'
+      );
+    }
+
+    throw err;
+
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
-function palClass(qid){
+function loadLocalState() {
+  // Do not migrate the old global state key into a server-managed attempt.
+  // It may contain answers from a different exam or question ordering.
+
+  let loaded = safeParse(
+    localStorage.getItem(KEY) || ''
+  );
+
+  if (!loaded || typeof loaded !== 'object') {
+    loaded = defaultState();
+  }
+
+  if (
+    !loaded.answers ||
+    typeof loaded.answers !== 'object'
+  ) {
+    loaded.answers = {};
+  }
+
+  if (
+    !loaded.marked ||
+    typeof loaded.marked !== 'object'
+  ) {
+    loaded.marked = {};
+  }
+
+  if (
+    !Number.isFinite(loaded.current) ||
+    loaded.current < 0
+  ) {
+    loaded.current = 0;
+  }
+
+  if (loaded.current >= totalQ) {
+    loaded.current = Math.max(0, totalQ - 1);
+  }
+
+  if (!Number.isFinite(loaded.violations)) {
+    loaded.violations = 0;
+  }
+
+  loaded.startedAt = serverStartedAtMs;
+
+  // Keep only this server-issued attempt's question IDs
+  // and valid option IDs.
+
+  const allowedIds = new Set(
+    Q.map(q => String(q.id))
+  );
+
+  Object.keys(loaded.answers).forEach(id => {
+    if (
+      !allowedIds.has(String(id)) ||
+      !['A', 'B', 'C', 'D'].includes(
+        String(loaded.answers[id]).toUpperCase()
+      )
+    ) {
+      delete loaded.answers[id];
+    } else {
+      loaded.answers[id] =
+        String(loaded.answers[id]).toUpperCase();
+    }
+  });
+
+  Object.keys(loaded.marked).forEach(id => {
+    if (!allowedIds.has(String(id))) {
+      delete loaded.marked[id];
+    } else {
+      loaded.marked[id] =
+        loaded.marked[id] === true;
+    }
+  });
+
+  state = loaded;
+
+  save();
+
+  // Remove the obsolete shared key.
+
+  try {
+    localStorage.removeItem(LEGACY_KEY);
+  } catch (e) {}
+}
+
+function palClass(qid) {
   const a = state.answers[qid];
   const m = !!state.marked[qid];
-  if(a === undefined && !m) return "pbtn unanswered";
-  if(a !== undefined && !m) return "pbtn answered";
-  if(a === undefined && m) return "pbtn review";
-  return "pbtn ansreview";
+
+  if (a === undefined && !m) {
+    return 'pbtn unanswered';
+  }
+
+  if (a !== undefined && !m) {
+    return 'pbtn answered';
+  }
+
+  if (a === undefined && m) {
+    return 'pbtn review';
+  }
+
+  return 'pbtn ansreview';
 }
 
-function renderPalette(){
-  if(!pal) return;
-  pal.innerHTML = "";
+function scrollToQuestionTop() {
+  if (!qTitle) return;
+
+  requestAnimationFrame(() => {
+    const topbar = document.querySelector('.topbar');
+
+    const stickyOffset = topbar
+      ? topbar.getBoundingClientRect().height
+      : 0;
+
+    const targetY =
+      window.scrollY +
+      qTitle.getBoundingClientRect().top -
+      stickyOffset -
+      12;
+
+    window.scrollTo({
+      top: Math.max(0, targetY),
+      behavior: 'smooth'
+    });
+  });
+}
+
+function preloadNextQuestionImage() {
+  if (!state || !Q.length) return;
+
+  const next = Q[state.current + 1];
+
+  if (!next || !next.image) return;
+
+  // Only preload the next image,
+  // rather than downloading every image at once.
+
+  const preloader = new Image();
+
+  preloader.decoding = 'async';
+  preloader.src = next.image;
+}
+
+function renderPalette() {
+  if (!pal || !state) return;
+
+  pal.innerHTML = '';
+
   Q.forEach((q, idx) => {
-    const b = document.createElement("button");
-    b.type = "button";
+    const b = document.createElement('button');
+
+    b.type = 'button';
     b.textContent = idx + 1;
-    b.className = palClass(q.id) + (idx===state.current ? " current":"");
-    b.addEventListener("click", () => {
+
+    b.className =
+      palClass(q.id) +
+      (idx === state.current ? ' current' : '');
+
+    b.addEventListener('click', () => {
       state.current = idx;
+
       save();
       render();
+      scrollToQuestionTop();
     });
+
     pal.appendChild(b);
   });
 }
 
-/* =======================
-   IMAGE MODAL (ZOOM)
-======================= */
-const imgModal    = document.getElementById("imgModal");
-const imgModalPic = document.getElementById("imgModalPic");
-const imgCloseBtn = document.getElementById("imgCloseBtn");
-const imgFullBtn  = document.getElementById("imgFullBtn");
+function openImgModal(src) {
+  if (!imgModal || !imgModalPic) return;
 
-function openImgModal(src){
-  if(!imgModal || !imgModalPic) return;
+  suppressViolations(1500);
+
   imgModalPic.src = src;
-  imgModal.classList.add("show");
-  imgModal.setAttribute("aria-hidden", "false");
+
+  imgModal.classList.add('show');
+
+  imgModal.setAttribute(
+    'aria-hidden',
+    'false'
+  );
 }
-function closeImgModal(){
-  if(!imgModal) return;
-  imgModal.classList.remove("show");
-  imgModal.setAttribute("aria-hidden", "true");
+
+function closeImgModal() {
+  if (!imgModal) return;
+
+  imgModal.classList.remove('show');
+
+  imgModal.setAttribute(
+    'aria-hidden',
+    'true'
+  );
+
+  if (imgModalPic) {
+    imgModalPic.removeAttribute('src');
+  }
 }
-if(imgCloseBtn) imgCloseBtn.addEventListener("click", closeImgModal);
-if(imgModal){
-  imgModal.addEventListener("click", (e) => {
-    if (e.target === imgModal) closeImgModal();
-  });
+
+if (imgCloseBtn) {
+  imgCloseBtn.addEventListener(
+    'click',
+    closeImgModal
+  );
 }
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") closeImgModal();
-});
-if(imgFullBtn){
-  imgFullBtn.addEventListener("click", async () => {
-    suppressViolations(4000);
-    try{
-      if (imgModalPic && imgModalPic.requestFullscreen) await imgModalPic.requestFullscreen();
-      else if (imgModal && imgModal.requestFullscreen) await imgModal.requestFullscreen();
-      else alert("Fullscreen not supported on this device/browser.");
-    }catch(err){
-      alert("Fullscreen blocked: " + err.message);
+
+if (imgModal) {
+  imgModal.addEventListener('click', e => {
+    if (e.target === imgModal) {
+      closeImgModal();
     }
   });
 }
 
-// ====== Answer helpers ======
-function setAnswer(qid, idx){
-  state.answers[qid] = idx;
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closeImgModal();
+  }
+});
+
+if (imgFullBtn) {
+  imgFullBtn.addEventListener('click', async () => {
+    suppressViolations(4000);
+
+    try {
+      if (
+        imgModalPic &&
+        imgModalPic.requestFullscreen
+      ) {
+        await imgModalPic.requestFullscreen();
+
+      } else if (
+        imgModal &&
+        imgModal.requestFullscreen
+      ) {
+        await imgModal.requestFullscreen();
+
+      } else {
+        alert(
+          'Fullscreen not supported on this device/browser.'
+        );
+      }
+
+    } catch (err) {
+      alert(
+        'Fullscreen blocked: ' + err.message
+      );
+    }
+  });
+}
+
+function setAnswer(qid, optionId) {
+  if (!state) return;
+
+  state.answers[qid] =
+    String(optionId).toUpperCase();
+
   save();
   renderPalette();
 }
-function clearAnswer(qid){
+
+function clearAnswer(qid) {
+  if (!state) return;
+
   delete state.answers[qid];
-  save();
-  renderPalette();
-}
-function toggleMark(qid){
-  state.marked[qid] = !state.marked[qid];
+
   save();
   renderPalette();
 }
 
-// ====== Render ======
-function render(){
+function toggleMark(qid) {
+  if (!state) return;
+
+  state.marked[qid] =
+    !state.marked[qid];
+
+  save();
+  renderPalette();
+}
+
+function render() {
+  if (!state) return;
+
   const q = Q[state.current];
-  if(!q) return;
 
-  if(qTitle) qTitle.textContent = `Question ${state.current+1} of ${totalQ}`;
-  if(qText) qText.textContent = q.question || "";
+  if (!q) return;
 
-  if(qImgWrap){
-    qImgWrap.innerHTML = "";
+  if (qTitle) {
+    qTitle.textContent =
+      `Question ${state.current + 1} of ${totalQ}`;
+  }
+
+  if (qText) {
+    qText.textContent = q.question || '';
+  }
+
+  if (qImgWrap) {
+    qImgWrap.innerHTML = '';
+
     if (q.image) {
-      const img = document.createElement("img");
+      const img = document.createElement('img');
+
       img.src = q.image;
-      img.alt = "Question image";
-      img.title = "Tap to zoom";
-      img.addEventListener("click", () => openImgModal(q.image));
+      img.alt = 'Question image';
+      img.title = 'Tap to zoom';
+
+      img.loading = 'eager';
+      img.decoding = 'async';
+      img.fetchPriority = 'high';
+
+      img.addEventListener('click', () => {
+        openImgModal(q.image);
+      });
+
+      img.addEventListener('error', () => {
+        console.warn(
+          'Question image failed to load:',
+          q.image
+        );
+
+        img.alt =
+          'Question image could not be loaded';
+
+      }, { once: true });
+
       qImgWrap.appendChild(img);
     }
   }
 
-  if(opts){
-    opts.innerHTML = "";
+  if (opts) {
+    opts.innerHTML = '';
+
     const picked = state.answers[q.id];
 
-    (q.options || []).forEach((text, i) => {
-      const row = document.createElement("label");
-      row.className = "opt";
+    (q.options || []).forEach(option => {
+      const row = document.createElement('label');
 
-      const radio = document.createElement("input");
-      radio.type = "radio";
-      radio.name = "opt";
-      radio.value = String(i);
-      radio.checked = (picked === i);
+      row.className = 'opt';
 
-      const span = document.createElement("span");
-      span.className = "optText";
-      span.textContent = text;
+      row.classList.toggle(
+        'selected',
+        picked === option.id
+      );
 
-      const choose = (e) => {
-        e.preventDefault();
-        radio.checked = true;
-        setAnswer(q.id, i);
-      };
+      const radio = document.createElement('input');
 
-      row.addEventListener("pointerdown", choose, {passive:false});
-      row.addEventListener("touchstart", choose, {passive:false});
-      row.addEventListener("click", () => {
-        if (picked !== i) setAnswer(q.id, i);
+      radio.type = 'radio';
+      radio.name = 'opt';
+      radio.value = option.id;
+      radio.checked = picked === option.id;
+
+      radio.setAttribute(
+        'aria-label',
+        option.text || `Option ${option.id}`
+      );
+
+      const span = document.createElement('span');
+
+      span.className = 'optText';
+      span.textContent = option.text;
+
+      // IMPORTANT:
+      // Do not select on touchstart, pointerdown or generic row click.
+      // Those events also occur while a candidate is scrolling.
+      // Native radio change fires only when the control is actually selected.
+
+      radio.addEventListener('change', () => {
+        if (radio.checked) {
+          setAnswer(q.id, option.id);
+
+          // Update visual selection without rebuilding the radio
+          // while the browser is completing its native touch interaction.
+
+          opts.querySelectorAll('.opt').forEach(el => {
+            el.classList.remove('selected');
+          });
+
+          row.classList.add('selected');
+        }
       });
 
       row.appendChild(radio);
       row.appendChild(span);
+
       opts.appendChild(row);
     });
   }
 
-  if(elVio) elVio.textContent = String(state.violations || 0);
+  if (elVio) {
+    elVio.textContent =
+      String(state.violations || 0);
+  }
 
-  if(prevBtn) prevBtn.disabled = state.current <= 0;
-  if(nextBtn) nextBtn.disabled = state.current >= totalQ - 1;
+  if (prevBtn) {
+    prevBtn.disabled =
+      state.current <= 0;
+  }
 
-  if(markBtn){
-    const isMarked = !!state.marked[q.id];
-    markBtn.textContent = isMarked ? "Unmark" : "Mark for Review";
+  if (nextBtn) {
+    nextBtn.disabled =
+      state.current >= totalQ - 1;
+  }
+
+  if (markBtn) {
+    markBtn.textContent =
+      state.marked[q.id]
+        ? 'Unmark'
+        : 'Mark for Review';
   }
 
   renderPalette();
+  preloadNextQuestionImage();
 }
 
-// ====== Controls ======
-if(prevBtn){
-  prevBtn.addEventListener("click", () => {
-    if(state.current > 0){
-      state.current -= 1;
+if (prevBtn) {
+  prevBtn.addEventListener('click', () => {
+    if (state && state.current > 0) {
+      state.current--;
+
       save();
+      render();
+      scrollToQuestionTop();
+    }
+  });
+}
+
+if (nextBtn) {
+  nextBtn.addEventListener('click', () => {
+    if (state && state.current < totalQ - 1) {
+      state.current++;
+
+      save();
+      render();
+      scrollToQuestionTop();
+    }
+  });
+}
+
+if (clearBtn) {
+  clearBtn.addEventListener('click', () => {
+    const q = Q[state?.current];
+
+    if (q) {
+      clearAnswer(q.id);
       render();
     }
   });
 }
-if(nextBtn){
-  nextBtn.addEventListener("click", () => {
-    if(state.current < totalQ - 1){
-      state.current += 1;
-      save();
+
+if (markBtn) {
+  markBtn.addEventListener('click', () => {
+    const q = Q[state?.current];
+
+    if (q) {
+      toggleMark(q.id);
       render();
     }
   });
 }
-if(clearBtn){
-  clearBtn.addEventListener("click", () => {
-    const q = Q[state.current];
-    if(!q) return;
-    clearAnswer(q.id);
-    render();
-  });
-}
-if(markBtn){
-  markBtn.addEventListener("click", () => {
-    const q = Q[state.current];
-    if(!q) return;
-    toggleMark(q.id);
-    render();
-  });
-}
-if(submitBtn){
-  submitBtn.addEventListener("click", () => {
-    if(confirm("Submit exam now?")){
-      submitExam(false, "MANUAL_SUBMIT");
+
+if (submitBtn) {
+  submitBtn.addEventListener('click', () => {
+    if (confirm('Submit exam now?')) {
+      submitExam(false, 'MANUAL_SUBMIT');
     }
   });
 }
 
-// ====== API helpers ======
-async function postAPI(payload){
-  const API_URL = window.API_URL || window.EXAM_API_URL || "";
-  if(!API_URL) throw new Error("API_URL not set in config.js");
+async function postViolation(type, details = '') {
+  if (!attemptReady || !state) return;
 
-  const ctrl = new AbortController();
-  const t = setTimeout(()=>ctrl.abort(), 15000);
-
-  try{
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(payload),
-      cache: "no-store",
-      signal: ctrl.signal
-    });
-
-    const txt = await res.text();
-    let data = {};
-    try{ data = JSON.parse(txt); }catch{ data = { ok:false, error:"Bad JSON", raw:txt }; }
-
-    if(!res.ok) throw new Error((data && (data.error||data.message)) || ("HTTP " + res.status));
-    return data;
-  } finally {
-    clearTimeout(t);
-  }
-}
-
-async function postViolation(type, details = ""){
-  try{
-    await postAPI({
-      action: "violation",
+  try {
+    const data = await postAPI({
+      action: 'violation',
       token: cand.token,
-      candidateId: cand.candidateId || cand.id || "",
-      type,
-      details
+      candidateId: cand.candidateId || cand.id || '',
+      type: type,
+      details: details
+    }, {
+      timeoutMs: 12000,
+      keepalive: true
     });
-  }catch(err){
-    console.log("Violation log failed:", err);
+
+    if (
+      Number.isFinite(
+        Number(data.violationCount)
+      )
+    ) {
+      authoritativeViolationCount = Math.max(
+        authoritativeViolationCount,
+        Number(data.violationCount)
+      );
+
+      state.violations = Math.max(
+        Number(state.violations) || 0,
+        authoritativeViolationCount
+      );
+    }
+
+    save();
+
+    if (elVio) {
+      elVio.textContent =
+        String(state.violations || 0);
+    }
+
+  } catch (err) {
+    console.warn(
+      'Violation log failed:',
+      err
+    );
   }
 }
 
-// ====== Proctoring ======
-function addViolation(reason){
-  if(!canCountViolation()) return;
+function addViolation(reason) {
+  if (
+    !canCountViolation() ||
+    !state ||
+    !attemptReady ||
+    submitted
+  ) {
+    return;
+  }
 
-  state.violations = (state.violations || 0) + 1;
+  // A single app/tab switch may emit both visibilitychange and blur.
+  // Treat events within this short interval as the same incident.
+
+  const now = Date.now();
+
+  if (now - lastViolationAt < 2000) {
+    return;
+  }
+
+  lastViolationAt = now;
+
+  state.violations = Math.max(
+    Number(state.violations) || 0,
+    authoritativeViolationCount
+  ) + 1;
+
   save();
-  if(elVio) elVio.textContent = String(state.violations);
 
-  postViolation(reason, `Violation detected during exam. Count=${state.violations}`);
-
-  if(window.PROCTOR_BLUR === true){
-    document.body.classList.add("proctor-blur");
-    setTimeout(() => document.body.classList.remove("proctor-blur"), 1500);
+  if (elVio) {
+    elVio.textContent =
+      String(state.violations);
   }
 
-  const maxV = Number.isFinite(window.MAX_VIOLATIONS) ? window.MAX_VIOLATIONS : null;
-  if(maxV && state.violations >= maxV){
-    submitExam(true, "MAX_VIOLATIONS");
+  postViolation(
+    reason,
+    `Visibility/focus event during exam. Local count=${state.violations}`
+  );
+
+  if (window.PROCTOR_BLUR === true) {
+    document.body.classList.add('proctor-blur');
+
+    setTimeout(() => {
+      document.body.classList.remove('proctor-blur');
+    }, 1500);
   }
 }
 
-document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "hidden") addViolation("TAB_SWITCH");
-});
-window.addEventListener("blur", () => {
-  if(IS_IOS) return;
-  addViolation("WINDOW_BLUR");
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    addViolation('TAB_SWITCH');
+  }
 });
 
-// ====== Submit ======
-async function submitExam(isAuto=false, reason="SUBMIT"){
-  if(submitted) return;
+window.addEventListener('blur', () => {
+  // iOS app switching is more consistently detected through visibilitychange.
+  // On desktop, count focus loss only if the page is still visible.
+
+  if (
+    !IS_IOS &&
+    document.visibilityState === 'visible'
+  ) {
+    addViolation('WINDOW_BLUR');
+  }
+});
+
+function updateTimer() {
+  if (submitted || !attemptReady) return;
+
+  const estimatedServerNow =
+    Date.now() + serverClockOffsetMs;
+
+  const left = Math.max(
+    0,
+    serverEndsAtMs - estimatedServerNow
+  );
+
+  const secs = Math.floor(left / 1000);
+
+  const hh = Math.floor(secs / 3600);
+  const mm = Math.floor((secs % 3600) / 60);
+  const ss = secs % 60;
+
+  if (elTime) {
+    elTime.textContent =
+      `${pad2(hh)}:${pad2(mm)}:${pad2(ss)}`;
+  }
+
+  if (left <= 0) {
+    submitExam(
+      true,
+      'SERVER_DEADLINE_REACHED'
+    );
+  }
+}
+
+async function submitExam(
+  isAuto = false,
+  reason = 'SUBMIT'
+) {
+  if (
+    submitted ||
+    !attemptReady ||
+    !state
+  ) {
+    return;
+  }
+
   submitted = true;
 
-  try{
-    if(submitBtn) submitBtn.disabled = true;
-    if(prevBtn) prevBtn.disabled = true;
-    if(nextBtn) nextBtn.disabled = true;
-    if(clearBtn) clearBtn.disabled = true;
-    if(markBtn) markBtn.disabled = true;
-  }catch{}
+  [
+    submitBtn,
+    prevBtn,
+    nextBtn,
+    clearBtn,
+    markBtn
+  ].forEach(b => {
+    if (b) b.disabled = true;
+  });
 
-  const candidateId = cand.candidateId || cand.id || "";
-  const r = calcResult();
+  try {
+    // Only selected option IDs and review markers leave the browser.
+    // Server calculates the actual score.
 
-  const payload = {
-    action: "submit",
-    token: cand.token,
-    candidateId,
-    payload: {
-      name: cand.name || "",
-      phone: cand.phone || "",
-      email: cand.email || "",
-      score: r.score,
-      correct: r.correct,
-      wrong: r.wrong,
-      unattempted: r.unattempted,
-      timeTakenSec: r.timeTakenSec,
-      startedAt: formatIndianTime(state.startedAt),
-      endedAt: formatIndianTime(Date.now()),
-      durationMin: (window.EXAM_DURATION_MIN || 60),
-      reason,
-      isAuto: !!isAuto,
-      violations: state.violations || 0,
+    const data = await postAPI({
+      action: 'submit',
+      token: cand.token,
+      candidateId: cand.candidateId || cand.id || '',
       answers: state.answers || {},
       marked: state.marked || {},
-      qOrder: Q.map(x => x.id),
-      userAgent: navigator.userAgent || ""
+      reason: reason,
+      isAuto: !!isAuto,
+      userAgent: navigator.userAgent || ''
+    }, {
+      timeoutMs: 30000
+    });
+
+    if (
+      data.candidateId &&
+      String(data.candidateId).trim() !== activeCandidateId
+    ) {
+      throw new Error(
+        'Server returned a result for a different candidate. Submission was not saved in this session.'
+      );
     }
-  };
 
-  try{
-    const data = await postAPI(payload);
+    const result = {
+      name: data.name || cand.name || '',
 
-    if(data.ok === false){
-      alert(data.error || data.message || "Submit failed");
-      submitted = false;
-      try{ if(submitBtn) submitBtn.disabled = false; }catch{}
+      candidateId:
+        data.candidateId || activeCandidateId,
+
+      score: data.score,
+      correct: data.correct,
+      wrong: data.wrong,
+      unattempted: data.unattempted,
+      totalQuestions: data.totalQuestions,
+      timeTakenSec: data.timeTakenSec,
+
+      violations: (
+        data.violations !== undefined
+          ? data.violations
+          : (
+              data.violationCount !== undefined
+                ? data.violationCount
+                : (state.violations || 0)
+            )
+      ),
+
+      startedAt:
+        data.startedAt ||
+        formatIndianTime(serverStartedAtMs),
+
+      endedAt:
+        data.endedAt ||
+        formatIndianTime(Date.now())
+    };
+
+    // Save this candidate's result only.
+
+    localStorage.setItem(
+      SUBMITTED_KEY,
+      'yes'
+    );
+
+    localStorage.setItem(
+      RESULT_KEY,
+      JSON.stringify(result)
+    );
+
+    try {
+      localStorage.removeItem(KEY);
+    } catch (e) {}
+
+    try {
+      localStorage.removeItem(LEGACY_KEY);
+    } catch (e) {}
+
+    location.replace('result.html');
+
+  } catch (err) {
+    alert(
+      'Submission failed: ' +
+      (
+        err && err.message
+          ? err.message
+          : err
+      )
+    );
+
+    submitted = false;
+
+    [
+      submitBtn,
+      prevBtn,
+      nextBtn,
+      clearBtn,
+      markBtn
+    ].forEach(b => {
+      if (b) b.disabled = false;
+    });
+  }
+}
+
+async function init() {
+  if (qTitle) {
+    qTitle.textContent = 'Loading questions…';
+  }
+
+  if (qText) {
+    qText.textContent =
+      'Please wait. Your examination is being prepared.';
+  }
+
+  try {
+    const data = await postAPI({
+      action: 'startExam',
+      token: cand.token,
+      candidateId: cand.candidateId || cand.id || ''
+    }, {
+      timeoutMs: 45000
+    });
+
+    if (data.alreadySubmitted) {
+      if (
+        data.candidateId &&
+        String(data.candidateId).trim() !== activeCandidateId
+      ) {
+        throw new Error(
+          'Server returned a submitted result for a different candidate.'
+        );
+      }
+
+      const priorResult = Object.assign(
+        {},
+        data,
+        {
+          candidateId:
+            data.candidateId || activeCandidateId
+        }
+      );
+
+      localStorage.setItem(
+        SUBMITTED_KEY,
+        'yes'
+      );
+
+      localStorage.setItem(
+        RESULT_KEY,
+        JSON.stringify(priorResult)
+      );
+
+      location.replace('result.html');
+
       return;
     }
 
-    localStorage.setItem("neet_submitted", "yes");
-    localStorage.setItem("neet_result", JSON.stringify({
-      name: cand.name || "",
-      candidateId,
-      score: r.score,
-      correct: r.correct,
-      wrong: r.wrong,
-      unattempted: r.unattempted,
-      timeTakenSec: r.timeTakenSec,
-      violations: state.violations || 0,
-      startedAt: formatIndianTime(state.startedAt),
-      endedAt: formatIndianTime(Date.now())
-    }));
+    if (
+      data.candidateId &&
+      String(data.candidateId).trim() !== activeCandidateId
+    ) {
+      throw new Error(
+        'Server returned an exam attempt for a different candidate.'
+      );
+    }
 
-    try{ localStorage.removeItem(KEY); }catch{}
-    try{ localStorage.removeItem(LEGACY_KEY); }catch{}
+    if (
+      !Array.isArray(data.questions) ||
+      !data.questions.length
+    ) {
+      throw new Error(
+        'No questions were returned by the secure question service.'
+      );
+    }
 
-    location.replace("result.html");
+    Q = data.questions;
+    totalQ = Q.length;
 
-  }catch(err){
-    alert("Network error: " + (err && err.message ? err.message : err));
-    submitted = false;
-    try{ if(submitBtn) submitBtn.disabled = false; }catch{}
+    serverStartedAtMs =
+      new Date(data.startedAtISO).getTime();
+
+    serverClockOffsetMs = data.serverNowISO
+      ? new Date(data.serverNowISO).getTime() - Date.now()
+      : 0;
+
+    serverEndsAtMs =
+      new Date(data.endsAtISO).getTime();
+
+    if (
+      !Number.isFinite(serverStartedAtMs) ||
+      !Number.isFinite(serverEndsAtMs) ||
+      serverEndsAtMs <= serverStartedAtMs
+    ) {
+      throw new Error(
+        'Invalid exam timing received from server.'
+      );
+    }
+
+    authoritativeViolationCount = Math.max(
+      0,
+      Number(data.violationCount) || 0
+    );
+
+    loadLocalState();
+
+    state.violations = Math.max(
+      Number(state.violations) || 0,
+      authoritativeViolationCount
+    );
+
+    attemptReady = true;
+
+    save();
+
+    if (!inExamWindowDisplayOnly()) {
+      console.warn(
+        'Local schedule differs from server schedule; server schedule is authoritative.'
+      );
+    }
+
+    updateTimer();
+
+    if (timerIntervalId) {
+      clearInterval(timerIntervalId);
+    }
+
+    timerIntervalId = setInterval(
+      updateTimer,
+      1000
+    );
+
+    render();
+
+  } catch (err) {
+    console.error(
+      'Exam initialization failed:',
+      err
+    );
+
+    if (qTitle) {
+      qTitle.textContent =
+        'Unable to load examination';
+    }
+
+    if (qText) {
+      qText.textContent =
+        (
+          err && err.message
+            ? err.message
+            : 'Please refresh or contact the administrator.'
+        );
+    }
+
+    if (submitBtn) submitBtn.disabled = true;
+    if (prevBtn) prevBtn.disabled = true;
+    if (nextBtn) nextBtn.disabled = true;
+    if (clearBtn) clearBtn.disabled = true;
+    if (markBtn) markBtn.disabled = true;
   }
 }
 
-// ====== Start ======
-(function init(){
-  if(!Array.isArray(Q) || Q.length === 0){
-    alert("Questions not loaded. Check questions.js link in exam.html");
-    return;
+function inExamWindowDisplayOnly() {
+  // Informational only.
+  // Apps Script enforces the real schedule.
+
+  if (
+    typeof window.isWithinExamWindow !== 'function'
+  ) {
+    return true;
   }
-  updateTimer();
-  setInterval(updateTimer, 1000);
-  render();
-})();
+
+  return window.isWithinExamWindow(Date.now());
+}
+
+init();
