@@ -4,13 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#071a32" />
-  <title>Result - DAMS Trivandrum Mock Test Series</title>
+  <title>Result History - DAMS Trivandrum Mock Test Series</title>
   <link rel="stylesheet" href="style.css" />
 
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     html, body {
       width: 100%;
@@ -23,7 +21,7 @@
       min-height: 100svh;
       padding: 12px;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: center;
       overflow-x: hidden;
       overflow-y: auto;
@@ -35,7 +33,7 @@
     .result-container {
       width: min(100%, 1050px);
       margin: 0 auto;
-      padding: 18px 22px 14px;
+      padding: 18px 22px 16px;
       border: 1px solid #e1e6ee;
       border-radius: 18px;
       background: rgba(255,255,255,.98);
@@ -80,15 +78,21 @@
       overflow-wrap: anywhere;
     }
 
-    .candidate-line strong {
-      color: #34445e;
+    .candidate-line strong { color: #34445e; }
+
+    .result-view-label {
+      margin: 0 0 7px;
+      color: #174a7c;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 800;
     }
 
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 9px;
-      margin: 0 0 12px;
+      margin: 0 0 16px;
     }
 
     .stat-card {
@@ -115,22 +119,134 @@
       overflow-wrap: anywhere;
     }
 
+    .history-section {
+      margin-top: 14px;
+      padding: 14px;
+      border: 1px solid #e1e6ee;
+      border-radius: 13px;
+      background: #fbfcfe;
+    }
+
+    .history-heading-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 5px;
+    }
+
+    .history-heading {
+      margin: 0;
+      color: #0a2342;
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .history-count {
+      flex: 0 0 auto;
+      color: #174a7c;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .history-status {
+      min-height: 18px;
+      margin: 0 0 10px;
+      color: #65738a;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .history-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .history-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) repeat(4, minmax(65px, .65fr)) auto;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 11px;
+      border: 1px solid #e1e6ee;
+      border-radius: 10px;
+      background: #fff;
+    }
+
+    .history-item-date {
+      min-width: 0;
+      color: #26364f;
+      font-size: 13px;
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+
+    .history-metric {
+      min-width: 0;
+      color: #58677d;
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .history-metric strong {
+      display: block;
+      margin-top: 2px;
+      color: #26364f;
+      font-size: 14px;
+    }
+
+    .history-view-btn,
+    .load-more-btn,
+    .result-btn {
+      min-height: 38px;
+      padding: 8px 12px;
+      border: 0;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .history-view-btn {
+      background: #eaf1f8;
+      color: #174a7c;
+    }
+
+    .history-view-btn:hover { background: #dce8f4; }
+
+    .history-view-btn:focus-visible,
+    .load-more-btn:focus-visible,
+    .result-btn:focus-visible {
+      outline: 3px solid rgba(23,74,124,.25);
+      outline-offset: 2px;
+    }
+
+    .load-more-wrap {
+      display: flex;
+      justify-content: center;
+      margin-top: 10px;
+    }
+
+    .load-more-btn {
+      min-width: 130px;
+      background: #eaf1f8;
+      color: #174a7c;
+    }
+
+    .load-more-btn:disabled { opacity: .6; cursor: wait; }
+
     .result-actions {
       display: flex;
       justify-content: center;
       gap: 10px;
-      margin-top: 2px;
+      margin-top: 15px;
     }
 
     .result-btn {
       min-width: 145px;
       min-height: 42px;
       padding: 9px 18px;
-      border: 0;
-      border-radius: 9px;
       font-size: 14px;
-      font-weight: 800;
-      cursor: pointer;
     }
 
     .result-btn.primary {
@@ -138,506 +254,311 @@
       color: #fff;
     }
 
-    /* Laptop screens */
-
-    @media (min-width: 761px) and (max-height: 850px) {
-      body.result-page {
-        padding: 8px;
-      }
-
-      .result-container {
-        padding: 13px 18px 9px;
-      }
-
-      .result-heading {
-        margin-bottom: 9px;
-      }
-
-      .candidate-card {
-        padding: 9px 13px;
-        margin-bottom: 9px;
-      }
-
-      .stats-grid {
-        gap: 7px;
-        margin-bottom: 9px;
-      }
-
-      .stat-card {
-        min-height: 68px;
-        padding: 8px 12px;
-      }
-
-      .result-btn {
-        min-height: 38px;
-      }
-    }
-
-    /* Mobile responsive layout */
+    .result-btn.primary:hover { background: #10385f; }
 
     @media (max-width: 760px) {
-      body.result-page {
-        padding: 8px;
-        align-items: center;
-      }
-
-      .result-container {
-        padding: 13px 12px 9px;
-        border-radius: 14px;
-      }
-
-      .institution-heading {
-        font-size: clamp(15px, 4.2vw, 20px);
-        letter-spacing: .035em;
-      }
-
-      .result-heading {
-        margin-bottom: 9px;
-        font-size: 27px;
-      }
-
-      .candidate-card {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 7px 10px;
-        padding: 9px 10px;
-        margin-bottom: 9px;
-      }
-
-      .candidate-line {
-        font-size: 12px;
-      }
-
-      .stats-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 7px;
-        margin-bottom: 9px;
-      }
-
-      .stat-card {
-        min-height: 62px;
-        padding: 7px 10px;
-        border-radius: 10px;
-      }
-
-      .stat-label {
-        font-size: 11px;
-      }
-
-      .stat-value {
-        font-size: 23px;
-      }
-
-      .result-actions {
-        gap: 8px;
-      }
-
-      .result-btn {
-        min-width: 0;
-        min-height: 38px;
-        padding: 8px 10px;
-        font-size: 13px;
-      }
+      body.result-page { padding: 8px; }
+      .result-container { padding: 13px 12px 10px; border-radius: 14px; }
+      .institution-heading { font-size: clamp(15px, 4.2vw, 20px); letter-spacing: .035em; }
+      .result-heading { margin-bottom: 9px; font-size: 27px; }
+      .candidate-card { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px 10px; padding: 9px 10px; margin-bottom: 9px; }
+      .candidate-line { font-size: 12px; }
+      .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; margin-bottom: 9px; }
+      .stat-card { min-height: 62px; padding: 7px 10px; border-radius: 10px; }
+      .stat-label { font-size: 11px; }
+      .stat-value { font-size: 23px; }
+      .history-section { padding: 10px; }
+      .history-heading { font-size: 16px; }
+      .history-item { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 9px; }
+      .history-item-date { grid-column: 1 / -1; font-size: 12px; }
+      .history-view-btn { grid-column: 1 / -1; width: 100%; }
+      .history-metric { font-size: 10px; }
+      .history-metric strong { font-size: 13px; }
+      .result-actions { gap: 8px; }
+      .result-btn { min-width: 0; min-height: 38px; padding: 8px 10px; font-size: 13px; }
     }
 
     @media (max-width: 360px) {
-      .candidate-line {
-        font-size: 11px;
-      }
-
-      .stat-card {
-        min-height: 58px;
-      }
-
-      .stat-value {
-        font-size: 21px;
-      }
+      .candidate-line { font-size: 11px; }
+      .stat-card { min-height: 58px; }
+      .stat-value { font-size: 21px; }
     }
   </style>
 </head>
 
 <body class="result-page">
-
   <main class="result-container">
-
-    <h2 class="institution-heading">
-      DAMS TRIVANDRUM MOCK TEST SERIES
-    </h2>
-
-    <h1 class="result-heading">
-      Result
-    </h1>
-
-    <!-- Candidate Details -->
+    <h2 class="institution-heading">DAMS TRIVANDRUM MOCK TEST SERIES</h2>
+    <h1 class="result-heading">Result</h1>
 
     <section class="candidate-card" aria-label="Candidate details">
-
-      <div class="candidate-line">
-        <strong>Name:</strong>
-        <span id="candName">-</span>
-      </div>
-
-      <div class="candidate-line">
-        <strong>Candidate ID:</strong>
-        <span id="candId">-</span>
-      </div>
-
-      <div class="candidate-line">
-        <strong>Email:</strong>
-        <span id="candEmail">-</span>
-      </div>
-
-      <div class="candidate-line">
-        <strong>Phone:</strong>
-        <span id="candPhone">-</span>
-      </div>
-
+      <div class="candidate-line"><strong>Name:</strong> <span id="candName">-</span></div>
+      <div class="candidate-line"><strong>Candidate ID:</strong> <span id="candId">-</span></div>
+      <div class="candidate-line"><strong>Email:</strong> <span id="candEmail">-</span></div>
+      <div class="candidate-line"><strong>Phone:</strong> <span id="candPhone">-</span></div>
     </section>
 
-    <!-- Examination Results -->
+    <p class="result-view-label" id="resultViewLabel" aria-live="polite">Latest result</p>
 
     <section class="stats-grid" aria-label="Examination result">
-
-      <div class="stat-card">
-        <div class="stat-label">Score</div>
-        <div class="stat-value" id="score">-</div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-label">Correct</div>
-        <div class="stat-value" id="correct">-</div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-label">Wrong</div>
-        <div class="stat-value" id="wrong">-</div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-label">Unattempted</div>
-        <div class="stat-value" id="unattempted">-</div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-label">Time Taken</div>
-        <div class="stat-value" id="timeTaken">-</div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-label">Violations</div>
-        <div class="stat-value" id="violations">-</div>
-      </div>
-
+      <div class="stat-card"><div class="stat-label">Score</div><div class="stat-value" id="score">-</div></div>
+      <div class="stat-card"><div class="stat-label">Correct</div><div class="stat-value" id="correct">-</div></div>
+      <div class="stat-card"><div class="stat-label">Wrong</div><div class="stat-value" id="wrong">-</div></div>
+      <div class="stat-card"><div class="stat-label">Unattempted</div><div class="stat-value" id="unattempted">-</div></div>
+      <div class="stat-card"><div class="stat-label">Time Taken</div><div class="stat-value" id="timeTaken">-</div></div>
+      <div class="stat-card"><div class="stat-label">Violations</div><div class="stat-value" id="violations">-</div></div>
     </section>
 
-    <!-- Logout Only -->
+    <section class="history-section" aria-labelledby="historyHeading">
+      <div class="history-heading-row">
+        <h2 class="history-heading" id="historyHeading">Previous Mock Test Results</h2>
+        <span class="history-count" id="historyCount"></span>
+      </div>
+      <p class="history-status" id="historyStatus" role="status" aria-live="polite">Loading result history...</p>
+      <div class="history-list" id="historyList"></div>
+      <div class="load-more-wrap">
+        <button class="load-more-btn" id="loadMoreBtn" type="button" hidden>Load More</button>
+      </div>
+    </section>
 
     <div class="result-actions">
-
-      <button
-        class="result-btn primary"
-        type="button"
-        onclick="backToLogin()"
-      >
-        Logout
-      </button>
-
+      <button class="result-btn primary" type="button" onclick="backToLogin()">Logout</button>
     </div>
-
   </main>
 
-  <script src="config.js?v=20261110a"></script>
-
+  <script src="config.js?v=20261112-history"></script>
   <script>
+    'use strict';
+
     function safeParse(value) {
-      try {
-        return JSON.parse(value);
-      } catch (e) {
-        return null;
-      }
-    }
-
-    function firstDefined() {
-      for (let i = 0; i < arguments.length; i++) {
-        const value = arguments[i];
-
-        if (
-          value !== undefined &&
-          value !== null &&
-          value !== ""
-        ) {
-          return value;
-        }
-      }
-
-      return null;
-    }
-
-    function byPath(obj, path) {
-      if (!obj || !path) return undefined;
-
-      return path.split(".").reduce(function(acc, key) {
-        return acc && acc[key] !== undefined
-          ? acc[key]
-          : undefined;
-      }, obj);
+      try { return JSON.parse(value); } catch (error) { return null; }
     }
 
     function setText(id, value, fallback) {
-      const el = document.getElementById(id);
-
-      if (el) {
-        el.textContent =
-          value !== undefined &&
-          value !== null &&
-          value !== ""
-            ? value
-            : fallback;
-      }
+      const element = document.getElementById(id);
+      if (!element) return;
+      element.textContent = value !== undefined && value !== null && value !== ''
+        ? String(value)
+        : fallback;
     }
 
     function formatTime(seconds) {
       const sec = Number(seconds);
-
-      if (!Number.isFinite(sec) || sec < 0) {
-        return "-";
-      }
-
+      if (!Number.isFinite(sec) || sec < 0) return '-';
       const h = Math.floor(sec / 3600);
       const m = Math.floor((sec % 3600) / 60);
-      const s = sec % 60;
-
-      if (h > 0) {
-        return h + " hr " + m + " min " + s + " sec";
-      }
-
-      if (m > 0) {
-        return m + " min " + s + " sec";
-      }
-
-      return s + " sec";
+      const s = Math.floor(sec % 60);
+      if (h > 0) return h + ' hr ' + m + ' min ' + s + ' sec';
+      if (m > 0) return m + ' min ' + s + ' sec';
+      return s + ' sec';
     }
 
-    // Candidate session is isolated to this browser tab.
-    // Result/submission keys are isolated by candidate + exam window.
+    function formatHistoryDate(item) {
+      const raw = item.submittedAtISO || item.submittedAt || '';
+      if (!raw) return 'Date not available';
+      const date = new Date(raw);
+      if (!Number.isNaN(date.getTime())) {
+        return new Intl.DateTimeFormat('en-IN', {
+          timeZone: 'Asia/Kolkata',
+          day: '2-digit', month: 'short', year: 'numeric',
+          hour: '2-digit', minute: '2-digit', hour12: true
+        }).format(date);
+      }
+      return String(item.submittedAt || raw);
+    }
 
     function candidateWindowStorageKey(prefix, candidateId) {
-      const cid = encodeURIComponent(
-        String(candidateId || "").trim()
-      );
-
-      const startMs = Number.isFinite(window.EXAM_START_MS)
-        ? window.EXAM_START_MS
-        : 0;
-
-      const endMs = Number.isFinite(window.EXAM_END_MS)
-        ? window.EXAM_END_MS
-        : 0;
-
-      return prefix + "_" + cid + "_" + startMs + "_" + endMs;
+      const cid = encodeURIComponent(String(candidateId || '').trim());
+      const startMs = Number.isFinite(window.EXAM_START_MS) ? window.EXAM_START_MS : 0;
+      const endMs = Number.isFinite(window.EXAM_END_MS) ? window.EXAM_END_MS : 0;
+      return prefix + '_' + cid + '_' + startMs + '_' + endMs;
     }
 
-    const candidate = safeParse(
-      sessionStorage.getItem("neet_candidate") || ""
-    ) || {};
+    const candidate = safeParse(sessionStorage.getItem('neet_candidate') || '') || {};
+    const candidateId = String(candidate.candidateId || candidate.id || '').trim();
+    let historyNextOffset = null;
+    let historyLoading = false;
+    let historyLoaded = 0;
+    let hasLocalResult = false;
 
-    const candidateId = String(
-      candidate.candidateId || candidate.id || ""
-    ).trim();
-
-    const resultKey = candidateWindowStorageKey(
-      "neet_result",
-      candidateId
-    );
-
-    const submittedKey = candidateWindowStorageKey(
-      "neet_submitted",
-      candidateId
-    );
-
-    let result = safeParse(
-      localStorage.getItem(resultKey) || ""
-    ) || {};
-
-    // Never display a result whose embedded candidate ID differs.
-
-    if (
-      result.candidateId &&
-      String(result.candidateId).trim() !== candidateId
-    ) {
-      result = {};
+    function renderResult(result, label) {
+      const item = result || {};
+      setText('score', item.score !== undefined ? item.score : (item.marks !== undefined ? item.marks : '-'), '-');
+      setText('correct', item.correct !== undefined ? item.correct : (item.correctCount !== undefined ? item.correctCount : '-'), '-');
+      setText('wrong', item.wrong !== undefined ? item.wrong : (item.wrongCount !== undefined ? item.wrongCount : '-'), '-');
+      setText('unattempted', item.unattempted !== undefined ? item.unattempted : (item.unanswered !== undefined ? item.unanswered : '-'), '-');
+      setText('timeTaken', formatTime(item.timeTakenSec !== undefined ? item.timeTakenSec : item.timeTaken), '-');
+      setText('violations', item.violations !== undefined ? item.violations : (item.violationCount !== undefined ? item.violationCount : 0), '0');
+      setText('resultViewLabel', label || 'Selected result', 'Selected result');
     }
 
-    // Candidate information.
+    function addHistoryItem(item, index) {
+      const row = document.createElement('article');
+      row.className = 'history-item';
 
-    if (!candidateId || !candidate.token) {
+      const date = document.createElement('div');
+      date.className = 'history-item-date';
+      date.textContent = formatHistoryDate(item);
+      row.appendChild(date);
 
-      window.location.replace(
-        "login.html?v=" + Date.now()
-      );
+      const metrics = [
+        ['Score', item.score],
+        ['Correct', item.correct],
+        ['Wrong', item.wrong],
+        ['Unattempted', item.unattempted]
+      ];
 
-    } else {
+      metrics.forEach(function(metric) {
+        const cell = document.createElement('div');
+        cell.className = 'history-metric';
+        cell.appendChild(document.createTextNode(metric[0]));
+        const value = document.createElement('strong');
+        value.textContent = metric[1] === undefined || metric[1] === null ? '-' : String(metric[1]);
+        cell.appendChild(value);
+        row.appendChild(cell);
+      });
 
-      setText(
-        "candName",
-        candidate.name,
-        "-"
-      );
+      const viewButton = document.createElement('button');
+      viewButton.type = 'button';
+      viewButton.className = 'history-view-btn';
+      viewButton.textContent = 'View Result';
+      viewButton.setAttribute('aria-label', 'View result from ' + formatHistoryDate(item));
+      viewButton.addEventListener('click', function() {
+        renderResult(item, 'Selected historical result · ' + formatHistoryDate(item));
+        window.scrollTo({top:0, behavior:'smooth'});
+      });
+      row.appendChild(viewButton);
 
-      setText(
-        "candId",
-        candidateId,
-        "-"
-      );
-
-      setText(
-        "candEmail",
-        candidate.email,
-        "-"
-      );
-
-      setText(
-        "candPhone",
-        candidate.phone,
-        "-"
-      );
-
+      document.getElementById('historyList').appendChild(row);
+      historyLoaded++;
     }
 
-    // Score.
+    async function requestHistory(offset) {
+      const apiUrl = window.API_URL || window.SCRIPT_URL || '';
+      if (!apiUrl) throw new Error('API_URL is missing in config.js.');
 
-    const score = firstDefined(
-      result.score,
-      result.marks,
-      result.totalScore,
-      byPath(result, "data.score"),
-      byPath(result, "data.marks"),
-      byPath(result, "result.score"),
-      byPath(result, "summary.score")
-    );
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {'Content-Type':'text/plain;charset=utf-8'},
+        cache: 'no-store',
+        body: JSON.stringify({
+          action: 'getResultHistory',
+          token: candidate.token,
+          candidateId: candidateId,
+          limit: 20,
+          offset: offset
+        })
+      });
 
-    // Correct answers.
+      const text = await response.text();
+      let data;
+      try { data = JSON.parse(text); }
+      catch (error) { throw new Error('The server returned an invalid response. Check the Test Web App URL.'); }
 
-    const correct = firstDefined(
-      result.correct,
-      result.correctCount,
-      byPath(result, "data.correct"),
-      byPath(result, "data.correctCount"),
-      byPath(result, "result.correct"),
-      byPath(result, "summary.correct")
-    );
+      if (!response.ok || data.ok === false) {
+        throw new Error(data.error || data.message || ('HTTP ' + response.status));
+      }
+      if (!Array.isArray(data.history)) throw new Error('The history response format is invalid.');
+      return data;
+    }
 
-    // Wrong answers.
+    async function loadHistory(loadMore) {
+      if (historyLoading) return;
+      if (loadMore && historyNextOffset === null) return;
 
-    const wrong = firstDefined(
-      result.wrong,
-      result.wrongCount,
-      byPath(result, "data.wrong"),
-      byPath(result, "data.wrongCount"),
-      byPath(result, "result.wrong"),
-      byPath(result, "summary.wrong")
-    );
+      historyLoading = true;
+      const status = document.getElementById('historyStatus');
+      const loadButton = document.getElementById('loadMoreBtn');
+      loadButton.disabled = true;
+      status.textContent = loadMore ? 'Loading more results...' : 'Loading result history...';
 
-    // Unattempted questions.
+      try {
+        const offset = loadMore ? historyNextOffset : 0;
+        const data = await requestHistory(offset);
+        const list = document.getElementById('historyList');
 
-    const unattempted = firstDefined(
-      result.unattempted,
-      result.unanswered,
-      byPath(result, "data.unattempted"),
-      byPath(result, "data.unanswered"),
-      byPath(result, "result.unattempted"),
-      byPath(result, "summary.unattempted")
-    );
+        if (!loadMore) {
+          list.replaceChildren();
+          historyLoaded = 0;
+        }
 
-    // Time taken.
+        data.history.forEach(addHistoryItem);
+        historyNextOffset = data.nextOffset === null || data.nextOffset === undefined
+          ? null
+          : Number(data.nextOffset);
 
-    const timeTakenSec = firstDefined(
-      result.timeTakenSec,
-      result.timeTaken,
-      byPath(result, "data.timeTakenSec"),
-      byPath(result, "result.timeTakenSec"),
-      byPath(result, "summary.timeTakenSec")
-    );
+        setText('historyCount', Number(data.totalCount || 0) + ' attempt(s)', '');
 
-    // Violations.
+        if (data.history.length === 0 && historyLoaded === 0) {
+          status.textContent = 'No submitted results were found for this candidate.';
+        } else {
+          status.textContent = 'Your submitted results are shown below, newest first.';
+        }
 
-    const violations = firstDefined(
-      result.violationCount,
-      result.violations,
-      byPath(result, "data.violationCount"),
-      byPath(result, "data.violations"),
-      byPath(result, "result.violationCount"),
-      byPath(result, "summary.violationCount")
-    );
+        loadButton.hidden = historyNextOffset === null;
+        loadButton.disabled = false;
 
-    // Display result values.
-
-    setText(
-      "score",
-      score,
-      "-"
-    );
-
-    setText(
-      "correct",
-      correct,
-      "-"
-    );
-
-    setText(
-      "wrong",
-      wrong,
-      "-"
-    );
-
-    setText(
-      "unattempted",
-      unattempted,
-      "-"
-    );
-
-    setText(
-      "timeTaken",
-      formatTime(timeTakenSec),
-      "-"
-    );
-
-    setText(
-      "violations",
-      violations,
-      "0"
-    );
-
-    // Clear only the active tab's session and obsolete shared legacy keys.
-    // Candidate-scoped results and all exam states are deliberately retained.
+        // If local result data is unavailable (for example, another device),
+        // show the latest server-stored summary automatically.
+        if (!loadMore && !hasLocalResult && data.history.length > 0) {
+          renderResult(data.history[0], 'Latest result · ' + formatHistoryDate(data.history[0]));
+        }
+      } catch (error) {
+        status.textContent = 'Could not load result history: ' + (error.message || String(error)) +
+          '. The result currently saved on this device is still available above.';
+        loadButton.hidden = true;
+      } finally {
+        historyLoading = false;
+        loadButton.disabled = false;
+      }
+    }
 
     function clearExamStorage() {
-      sessionStorage.removeItem("neet_candidate");
-
+      // Clear only this tab's login session and legacy unscoped keys.
+      // Candidate/window-specific exam and result records are preserved.
+      sessionStorage.removeItem('neet_candidate');
       [
-        "neet_candidate",
-        "neet_submitted",
-        "neet_result",
-        "neet_pending_submission",
-        "candidateId",
-        "token",
-        "candidateName",
-        "candidatePhone",
-        "candidateEmail"
-      ].forEach(function(key) {
-        localStorage.removeItem(key);
-      });
+        'neet_candidate', 'neet_submitted', 'neet_result',
+        'neet_pending_submission', 'candidateId', 'token',
+        'candidateName', 'candidatePhone', 'candidateEmail'
+      ].forEach(function(key) { localStorage.removeItem(key); });
     }
-
-    // Logout.
 
     function backToLogin() {
       clearExamStorage();
-
-      window.location.href =
-        "login.html?v=" + Date.now();
+      window.location.href = 'login.html?v=' + Date.now();
     }
 
-  </script>
+    document.getElementById('loadMoreBtn').addEventListener('click', function() {
+      loadHistory(true);
+    });
 
+    (function initialiseResultPage() {
+      if (!candidateId || !candidate.token) {
+        window.location.replace('login.html?v=' + Date.now());
+        return;
+      }
+
+      setText('candName', candidate.name, '-');
+      setText('candId', candidateId, '-');
+      setText('candEmail', candidate.email, '-');
+      setText('candPhone', candidate.phone, '-');
+
+      const resultKey = candidateWindowStorageKey('neet_result', candidateId);
+      let localResult = safeParse(localStorage.getItem(resultKey) || '') || {};
+      if (localResult.candidateId && String(localResult.candidateId).trim() !== candidateId) {
+        localResult = {};
+      }
+
+      hasLocalResult = Object.keys(localResult).length > 0;
+      if (hasLocalResult) {
+        renderResult(localResult, 'Latest result on this device');
+      } else {
+        renderResult({}, 'Latest result');
+      }
+
+      loadHistory(false);
+    })();
+  </script>
 </body>
 </html>
