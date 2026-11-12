@@ -1,341 +1,511 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>ZENITH HIGH CBT Exam</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <style>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DAMS TRIVANDRUM - MOCK TEST SERIES - Exam</title>
+
+<style>
+    * { box-sizing: border-box; }
+
     body {
-      font-family: Arial, sans-serif;
-      background: #eef3f9;
       margin: 0;
-      padding: 0;
+      font-family: Arial, sans-serif;
+      background: #ffffff;
+      color: #111;
     }
 
     .topbar {
-      background: #0b2c66;
+      background: #003b66;
       color: white;
-      padding: 14px 18px;
+      min-height: 34px;
+      padding: 7px 14px;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      font-size: 14px;
       font-weight: bold;
+      position: sticky;
+      top: 0;
+      z-index: 999;
     }
 
-    .container {
-      max-width: 900px;
-      margin: 20px auto;
-      background: white;
-      padding: 24px;
-      border-radius: 14px;
-      box-shadow: 0 5px 18px rgba(0,0,0,0.12);
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 310px;
+      min-height: calc(100vh - 34px);
     }
 
-    .question-number {
-      font-size: 20px;
-      font-weight: bold;
-      color: #0b2c66;
+    .main {
+      padding: 15px 45px;
+      background: #ffffff;
+    }
+
+    .qbox { max-width: 950px; }
+
+    .student-info {
+      font-size: 13px;
       margin-bottom: 10px;
-    }
-
-    .question-text {
-      font-size: 18px;
       line-height: 1.5;
-      margin-bottom: 18px;
+      color: #333;
     }
 
-    .question-img {
-      max-width: 100%;
-      max-height: 350px;
-      display: block;
-      margin: 15px auto;
-      border-radius: 8px;
+    .qtitle {
+      font-weight: bold;
+      margin-bottom: 12px;
+      font-size: 15px;
     }
 
-    .option {
-      border: 1px solid #ccc;
+    .qtext {
+      background: #f7f7f7;
       padding: 12px;
-      border-radius: 8px;
-      margin-bottom: 10px;
-      cursor: pointer;
-      font-size: 17px;
+      border-radius: 4px;
+      line-height: 1.45;
+      font-size: 15px;
+      margin-bottom: 14px;
+      white-space: pre-wrap;
     }
 
-    .option.selected {
+    .media-status {
+      display: none;
+      padding: 12px;
+      margin: 12px 0;
+      background: #eef3f9;
+      border: 1px solid #d6dce5;
+      border-radius: 6px;
+      color: #003b66;
+      font-size: 14px;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .qimg {
+      width: 100%;
+      max-height: 520px;
+      object-fit: contain;
+      display: block;
+      margin: 12px auto;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      cursor: zoom-in;
+      background: #ffffff;
+    }
+
+    .qvideo {
+      width: 100%;
+      max-height: 520px;
+      display: block;
+      margin: 12px auto;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background: #000000;
+    }
+
+    .opts { margin-top: 10px; }
+
+    .opt {
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      font-size: 14px;
+      background: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .opt:hover { background: #f6f8fb; }
+
+    .opt.selected {
       background: #dbeafe;
-      border-color: #0b2c66;
+      border-color: #003b66;
       font-weight: bold;
     }
 
-    .nav-buttons {
+    .radio-circle {
+      width: 13px;
+      height: 13px;
+      min-width: 13px;
+      border-radius: 50%;
+      border: 2px solid #8a8a8a;
+      display: inline-block;
+      position: relative;
+    }
+
+    .opt.selected .radio-circle { border-color: #0057d9; }
+
+    .opt.selected .radio-circle::after {
+      content: "";
+      width: 7px;
+      height: 7px;
+      background: #0057d9;
+      border-radius: 50%;
+      position: absolute;
+      left: 1px;
+      top: 1px;
+    }
+
+    .actions {
       display: flex;
-      gap: 10px;
-      margin-top: 20px;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
     }
 
     button {
-      padding: 12px 18px;
-      background: #0b2c66;
+      background: #003b66;
       color: white;
       border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      cursor: pointer;
+      border-radius: 5px;
+      padding: 9px 14px;
       font-weight: bold;
+      cursor: pointer;
+      font-size: 13px;
     }
 
-    button.secondary {
-      background: #555;
+    button:hover { opacity: 0.9; }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
     }
 
-    button.submit {
-      background: #0b7a32;
-      margin-left: auto;
+    button.danger { background: #c40035; }
+
+    .palette {
+      background: #f3f5fa;
+      border-left: 1px solid #d6dce5;
+      padding: 25px 18px;
+      min-height: calc(100vh - 34px);
+      position: sticky;
+      top: 34px;
+      max-height: calc(100vh - 34px);
+      overflow-y: auto;
+      scroll-behavior: smooth;
     }
 
-    .student-info {
+    .palette h3 {
+      margin: 0 0 16px 0;
+      font-size: 20px;
+    }
+
+    #pal {
+      display: grid;
+      grid-template-columns: repeat(6, 38px);
+      gap: 10px;
+      align-items: center;
+    }
+
+    #pal button {
+      width: 38px;
+      height: 38px;
+      padding: 0;
+      border-radius: 6px;
+      border: none;
+      font-size: 13px;
+      font-weight: bold;
+      color: #111;
+      background: #dbe3e7;
+    }
+
+    #pal button.current {
+      outline: 3px solid #000;
+      outline-offset: 2px;
+    }
+
+    #pal button.unanswered {
+      background: #dbe3e7;
+      color: #111;
+    }
+
+    #pal button.answered {
+      background: #2e7d32;
+      color: white;
+    }
+
+    #pal button.review {
+      background: #7b1fa2;
+      color: white;
+    }
+
+    #pal button.ansreview {
+      background: #0d70b7;
+      color: white;
+    }
+
+    .legend {
+      margin-top: 16px;
+      font-size: 13px;
+    }
+
+    .legend div {
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .dot {
+      width: 13px;
+      height: 13px;
+      display: inline-block;
+      border-radius: 3px;
+    }
+
+    .dot.unanswered { background: #dbe3e7; }
+    .dot.answered { background: #2e7d32; }
+    .dot.review { background: #7b1fa2; }
+    .dot.ansreview { background: #0d70b7; }
+
+    .warning {
+      color: #c62828;
+      font-weight: bold;
+      margin-top: 14px;
       font-size: 14px;
     }
 
-    .warning {
-      color: red;
-      font-weight: bold;
-      margin-top: 15px;
+    .img-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.92);
+      z-index: 9999;
     }
-  </style>
+
+    .img-modal.show { display: block; }
+
+    .img-modal-top {
+      height: 55px;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+    }
+
+    .img-modal-body {
+      height: calc(100vh - 55px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: auto;
+    }
+
+    .img-modal-body img {
+      max-width: 95%;
+      max-height: 95%;
+      object-fit: contain;
+    }
+
+    @media (max-width: 768px) {
+      .topbar {
+        height: auto;
+        min-height: 36px;
+        font-size: 13px;
+        padding: 8px 10px;
+      }
+
+      .layout { display: block; }
+
+      .main { padding: 12px; }
+
+      .qtext { font-size: 14px; }
+
+      .qimg,
+      .qvideo {
+        max-height: 360px;
+      }
+
+      .opt {
+        font-size: 14px;
+        padding: 10px;
+      }
+
+      .actions { gap: 6px; }
+
+      .actions button {
+        padding: 8px 10px;
+        font-size: 12px;
+      }
+
+      .palette {
+        border-left: none;
+        border-top: 1px solid #d6dce5;
+        min-height: auto;
+        padding: 18px 12px;
+        position: static;
+        max-height: 55vh;
+        overflow-y: auto;
+        scroll-behavior: smooth;
+      }
+
+      #pal {
+        grid-template-columns: repeat(6, 42px);
+        gap: 9px;
+      }
+
+      #pal button {
+        width: 42px;
+        height: 42px;
+        font-size: 13px;
+      }
+    }
+
+    @media (max-width: 380px) {
+      #pal { grid-template-columns: repeat(5, 42px); }
+    }
+
+    #qImgWrap img {
+      width: 100%;
+      max-height: 520px;
+      object-fit: contain;
+      display: block;
+      margin: 12px auto;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      cursor: zoom-in;
+      background: #fff;
+    }
+
+    #imgModalPic {
+      max-width: 95%;
+      max-height: 95%;
+      object-fit: contain;
+    }
+
+    .student-info { margin-bottom: 10px; }
+    .schedule-info { font-size: 12px; font-weight: normal; }
+
+    /* Candidate ID in exam header */
+    .candidate-id-display {
+      font-size: 12px;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 768px) {
+      .candidate-id-display {
+        display: block;
+        margin-top: 3px;
+        font-size: 12px;
+      }
+    }
+</style>
 </head>
 
 <body>
-  <div class="topbar">
-    <div>ZENITH HIGH CBT</div>
-    <div id="timer">Time: 180:00</div>
-  </div>
 
-  <div class="container">
-    <div class="student-info" id="studentInfo"></div>
+  <header class="topbar">
+    <div>
+      DAMS TRIVANDRUM - MOCK TEST SERIES
 
-    <div class="question-number" id="questionNumber"></div>
-    <div class="question-text" id="questionText"></div>
-    <img id="questionImage" class="question-img" style="display:none;">
+      <span class="candidate-id-display">
+        | Candidate ID: <b id="candidateIdDisplay">--</b>
+      </span>
 
-    <div id="optionsBox"></div>
-
-    <div class="nav-buttons">
-      <button class="secondary" onclick="prevQuestion()">Previous</button>
-      <button onclick="nextQuestion()">Next</button>
-      <button class="submit" onclick="confirmSubmit()">Submit Exam</button>
+      <span class="schedule-info">
+        | IST: <span id="istClock">--</span>
+      </span>
     </div>
 
-    <div class="warning" id="warning"></div>
+    <div>
+      Time Left: <b id="timeLeft">60:00</b>
+      &nbsp; | &nbsp;
+      Violations: <b id="vio">0</b>
+    </div>
+  </header>
+
+  <div class="layout">
+
+    <main class="main">
+      <div class="qbox">
+
+        <div class="student-info" id="studentInfo"></div>
+
+        <div class="student-info schedule-info">
+          Exam window:
+          <span id="examStartIST">--</span>
+          to
+          <span id="examEndIST">--</span>
+        </div>
+
+        <div id="qTitle" class="qtitle">Loading examination...</div>
+        <div id="qText" class="qtext"></div>
+        <div id="qImgWrap"></div>
+        <div id="opts" class="opts"></div>
+
+        <div class="actions">
+          <button id="prevBtn" type="button">Previous</button>
+          <button id="clearBtn" type="button">Clear Response</button>
+          <button id="markBtn" type="button">Mark for Review</button>
+          <button id="nextBtn" type="button">Next</button>
+        </div>
+
+        <div class="actions">
+          <button id="submitBtn" class="danger" type="button">Submit</button>
+        </div>
+
+        <div class="warning" id="warning"></div>
+
+      </div>
+    </main>
+
+    <aside class="palette" id="paletteBox">
+      <h3>Questions</h3>
+      <div id="pal"></div>
+
+      <div class="legend">
+        <div><span class="dot unanswered"></span> Unanswered</div>
+        <div><span class="dot answered"></span> Answered</div>
+        <div><span class="dot review"></span> Marked</div>
+        <div><span class="dot ansreview"></span> Answered + Marked</div>
+      </div>
+    </aside>
+
   </div>
 
-  <script src="questions.js"></script>
+  <div id="imgModal" class="img-modal" aria-hidden="true">
+    <div class="img-modal-top">
+      <button id="imgFullBtn" type="button">Fullscreen</button>
+      <button id="imgCloseBtn" class="danger" type="button">Close</button>
+    </div>
 
+    <div class="img-modal-body">
+      <img id="imgModalPic" alt="Question image enlarged" />
+    </div>
+  </div>
+
+  <!-- Load configuration first, then the single exam controller. -->
+  <script src="config.js?v=20261110a"></script>
+  <script src="exam.js?v=20261110a"></script>
+
+  <!-- Display logged-in Candidate ID -->
   <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwWqrXYBHFoZJCohBix9FXKP4BMkZym-r4arYbybFiXLAf78aBQmQSMFSEAp5okNLJs/exec";
-
-    const EXAM_DURATION_SECONDS = 180 * 60;
-
-    let currentIndex = 0;
-    let userAnswers = {};
-    let startedAt = new Date();
-    let timerInterval = null;
-    let submitted = false;
-
-    const candidateId = localStorage.getItem("candidateId") || "";
-    const token = localStorage.getItem("token") || "";
-    const candidateName = localStorage.getItem("candidateName") || "";
-    const candidatePhone = localStorage.getItem("candidatePhone") || "";
-    const candidateEmail = localStorage.getItem("candidateEmail") || "";
-
-    if (!candidateId || !token) {
-      alert("Please login first");
-      window.location.href = "login.html";
-    }
-
-    document.getElementById("studentInfo").innerHTML =
-      "<b>Name:</b> " + candidateName +
-      " | <b>ID:</b> " + candidateId +
-      " | <b>Email:</b> " + candidateEmail;
-
-    function renderQuestion() {
-      const q = window.questions[currentIndex];
-
-      document.getElementById("questionNumber").textContent =
-        "Question " + (currentIndex + 1) + " of " + window.questions.length;
-
-      document.getElementById("questionText").textContent = q.question;
-
-      const img = document.getElementById("questionImage");
-
-      if (q.image && q.image.trim() !== "") {
-        img.src = q.image;
-        img.style.display = "block";
-      } else {
-        img.style.display = "none";
-      }
-
-      const optionsBox = document.getElementById("optionsBox");
-      optionsBox.innerHTML = "";
-
-      q.options.forEach(function(option, index) {
-        const div = document.createElement("div");
-        div.className = "option";
-
-        if (userAnswers[q.id] === index) {
-          div.classList.add("selected");
-        }
-
-        const label = ["A- 1", "B- 2", "C- 3", "D- 4"][index];
-
-        div.textContent = label + ". " + option;
-
-        div.onclick = function() {
-          userAnswers[q.id] = index;
-          renderQuestion();
-        };
-
-        optionsBox.appendChild(div);
-      });
-    }
-
-    function nextQuestion() {
-      if (currentIndex < window.questions.length - 1) {
-        currentIndex++;
-        renderQuestion();
-      }
-    }
-
-    function prevQuestion() {
-      if (currentIndex > 0) {
-        currentIndex--;
-        renderQuestion();
-      }
-    }
-
-    function confirmSubmit() {
-      const ok = confirm("Are you sure you want to submit the exam?");
-      if (ok) {
-        submitExam("manual", false);
-      }
-    }
-
-    async function submitExam(reason, isAuto) {
-      if (submitted) return;
-      submitted = true;
-
-      const endedAt = new Date();
-      const timeTakenSec = Math.floor((endedAt - startedAt) / 1000);
-
-      const qOrder = window.questions.map(q => q.id);
-
+    (function () {
       try {
-        const res = await fetch(SCRIPT_URL, {
-          method: "POST",
-          body: JSON.stringify({
-            action: "submit",
-            candidateId: candidateId,
-            token: token,
-            responses: userAnswers,
-            qOrder: qOrder,
-            startedAtIST: formatLocalDate(startedAt),
-            endedAtIST: formatLocalDate(endedAt),
-            timeTakenSec: timeTakenSec,
-            userAgent: navigator.userAgent,
-            reason: reason,
-            isAuto: isAuto
-          })
-        });
+        const candidate = JSON.parse(
+          sessionStorage.getItem("neet_candidate") || "{}"
+        );
 
-        const result = await res.json();
+        const candidateId =
+          candidate.candidateId || candidate.id || "";
 
-        if (result.status === "success") {
-          alert("Exam submitted successfully");
-          localStorage.removeItem("token");
-          window.location.href = "thankyou.html";
-        } else {
-          alert(result.message || "Submission failed");
-          submitted = false;
+        const display = document.getElementById("candidateIdDisplay");
+
+        if (display) {
+          display.textContent = candidateId || "Not available";
         }
-
       } catch (error) {
-        alert("Submission failed. Please check internet and try again.");
-        submitted = false;
-      }
-    }
-
-    function startTimer() {
-      let remaining = EXAM_DURATION_SECONDS;
-
-      timerInterval = setInterval(function() {
-        remaining--;
-
-        const min = Math.floor(remaining / 60);
-        const sec = remaining % 60;
-
-        document.getElementById("timer").textContent =
-          "Time: " + min + ":" + String(sec).padStart(2, "0");
-
-        if (remaining <= 0) {
-          clearInterval(timerInterval);
-          submitExam("time_over", true);
+        const display = document.getElementById("candidateIdDisplay");
+        if (display) {
+          display.textContent = "Not available";
         }
-      }, 1000);
-    }
-
-    function sendViolation(type, details) {
-      if (!candidateId || !token || submitted) return;
-
-      fetch(SCRIPT_URL, {
-        method: "POST",
-        body: JSON.stringify({
-          action: "violation",
-          candidateId: candidateId,
-          token: token,
-          type: type,
-          details: details || ""
-        })
-      });
-    }
-
-    document.addEventListener("visibilitychange", function() {
-      if (document.hidden) {
-        sendViolation("Tab switched", "Student switched tab or minimized browser");
       }
-    });
-
-    document.addEventListener("fullscreenchange", function() {
-      if (!document.fullscreenElement) {
-        sendViolation("Fullscreen exited", "Student exited fullscreen mode");
-      }
-    });
-
-    document.addEventListener("contextmenu", function(e) {
-      e.preventDefault();
-      sendViolation("Right click attempted", "Student attempted right click");
-    });
-
-    document.addEventListener("copy", function(e) {
-      e.preventDefault();
-      sendViolation("Copy attempted", "Student attempted copy");
-    });
-
-    window.addEventListener("beforeunload", function() {
-      if (!submitted) {
-        sendViolation("Page refreshed", "Student refreshed, closed, or left page");
-      }
-    });
-
-    function formatLocalDate(date) {
-      return date.toLocaleString("en-IN", {
-        timeZone: "Asia/Kolkata",
-        hour12: false
-      });
-    }
-
-    renderQuestion();
-    startTimer();
+    })();
   </script>
+
 </body>
 </html>
