@@ -1,322 +1,146 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#8E1245" />
-  <title>Result History - DAMS Trivandrum Mock Test Series</title>
-  <link rel="stylesheet" href="style.css" />
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#071a32">
+  <title>Result - DAMS Trivandrum Mock Test Series</title>
+  
   <style>
     * { box-sizing: border-box; }
-
-    html, body {
-      width: 100%;
-      min-height: 100%;
-      margin: 0;
-    }
-
+    html, body { margin: 0; min-height: 100%; }
     body.result-page {
       min-height: 100vh;
       min-height: 100svh;
       padding: 12px;
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: center;
-      overflow-x: hidden;
-      overflow-y: auto;
-      background: #F7F3F5;
-      color: #26364f;
-      font-family: Arial, Helvetica, sans-serif;
+      background: #f2f5f9;
+      color: #26364d;
+      font-family: Arial, sans-serif;
     }
-
     .result-container {
-      width: min(100%, 1050px);
-      margin: 0 auto;
-      padding: 18px 22px 16px;
-      border: 1px solid #e1e6ee;
-      border-radius: 18px;
-      background: rgba(255,255,255,.98);
-      box-shadow: 0 12px 36px rgba(20,39,66,.10);
+      width: min(1180px, 100%);
+      margin: auto;
+      padding: clamp(14px, 2.2vh, 24px);
+      border: 1px solid #e1e7ef;
+      border-radius: 20px;
+      background: #fff;
+      box-shadow: 0 12px 38px rgba(15,35,60,.10);
     }
-
-    .institution-heading {
-      margin: 0 0 5px;
-      color: #C2185B;
+    .brand-heading {
+      margin: 0 0 3px;
+      color: #173f6c;
       text-align: center;
-      text-transform: uppercase;
-      font-size: clamp(17px, 2.4vw, 24px);
+      font-size: clamp(17px, 2.3vw, 27px);
       line-height: 1.15;
-      letter-spacing: .055em;
       font-weight: 900;
+      letter-spacing: .055em;
     }
-
     .result-heading {
-      margin: 0 0 13px;
-      color: #171717;
+      margin: 0 0 12px;
+      color: #102b4c;
       text-align: center;
-      font-size: clamp(25px, 3.4vw, 34px);
+      font-size: clamp(25px, 3vw, 36px);
       line-height: 1.1;
       font-weight: 900;
     }
-
     .candidate-card {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 8px 16px;
-      margin: 0 0 12px;
-      padding: 12px 15px;
-      border: 1px solid #e1e6ee;
+      gap: 8px 14px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      border: 1px solid #e1e7ef;
       border-radius: 13px;
       background: #fff;
     }
-
     .candidate-line {
       min-width: 0;
-      font-size: 14px;
-      line-height: 1.35;
       overflow-wrap: anywhere;
+      font-size: clamp(12px, 1.2vw, 15px);
+      line-height: 1.35;
     }
-
-    .candidate-line strong { color: #34445e; }
-
-    .result-view-label {
-      margin: 0 0 7px;
-      color: #C2185B;
-      text-align: center;
-      font-size: 13px;
-      font-weight: 800;
-    }
-
+    .candidate-line strong { color: #34445b; }
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 9px;
-      margin: 0 0 16px;
     }
-
     .stat-card {
       min-width: 0;
-      min-height: 78px;
-      padding: 10px 14px;
-      border: 1px solid #e1e6ee;
+      padding: 10px 13px;
+      border: 1px solid #e1e7ef;
       border-radius: 13px;
       background: #fff;
     }
-
     .stat-label {
-      margin-bottom: 3px;
-      color: #58677d;
+      color: #526176;
       font-size: 13px;
-      font-weight: 800;
+      font-weight: 750;
     }
-
     .stat-value {
-      color: #26364f;
-      font-size: clamp(23px, 3vw, 30px);
-      line-height: 1.05;
-      font-weight: 900;
-      overflow-wrap: anywhere;
-    }
-
-    .history-section {
-      margin-top: 14px;
-      padding: 14px;
-      border: 1px solid #e1e6ee;
-      border-radius: 13px;
-      background: #fbfcfe;
-    }
-
-    .history-heading-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 5px;
-    }
-
-    .history-heading {
-      margin: 0;
-      color: #171717;
-      font-size: 18px;
-      font-weight: 900;
-    }
-
-    .history-count {
-      flex: 0 0 auto;
-      color: #C2185B;
-      font-size: 12px;
-      font-weight: 800;
-    }
-
-    .history-status {
-      min-height: 18px;
-      margin: 0 0 10px;
-      color: #65738a;
-      font-size: 12px;
-      line-height: 1.4;
-    }
-
-    .history-list {
-      display: grid;
-      gap: 8px;
-    }
-
-    .history-item {
-      display: grid;
-      grid-template-columns: minmax(0, 1.4fr) repeat(4, minmax(65px, .65fr)) auto;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 11px;
-      border: 1px solid #e1e6ee;
-      border-radius: 10px;
-      background: #fff;
-    }
-
-    .history-item-date {
-      min-width: 0;
-      color: #26364f;
-      font-size: 13px;
-      font-weight: 800;
-      overflow-wrap: anywhere;
-    }
-
-    .history-metric {
-      min-width: 0;
-      color: #58677d;
-      font-size: 11px;
-      line-height: 1.35;
-    }
-
-    .history-metric strong {
-      display: block;
       margin-top: 2px;
-      color: #26364f;
-      font-size: 14px;
+      color: #142f50;
+      font-size: clamp(21px, 2.6vw, 31px);
+      line-height: 1.1;
+      font-weight: 900;
+      overflow-wrap: anywhere;
     }
-
-    .history-view-btn,
-    .load-more-btn,
-    .result-btn {
-      min-height: 38px;
-      padding: 8px 12px;
-      border: 0;
-      border-radius: 8px;
-      font-size: 12px;
-      font-weight: 800;
-      cursor: pointer;
-    }
-
-    .history-view-btn {
-      background: #FCE8F0;
-      color: #C2185B;
-    }
-
-    .history-view-btn:hover { background: #F7D5E2; }
-
-    .history-view-btn:focus-visible,
-    .load-more-btn:focus-visible,
-    .result-btn:focus-visible {
-      outline: 3px solid rgba(194,24,91,.25);
-      outline-offset: 2px;
-    }
-
-    .load-more-wrap {
-      display: flex;
-      justify-content: center;
-      margin-top: 10px;
-    }
-
-    .load-more-btn {
-      min-width: 130px;
-      background: #FCE8F0;
-      color: #C2185B;
-    }
-
-    .load-more-btn:disabled { opacity: .6; cursor: wait; }
-
     .result-actions {
       display: flex;
       justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
       gap: 10px;
-      margin-top: 15px;
+      margin-top: 12px;
     }
-
     .result-btn {
       min-width: 145px;
       min-height: 42px;
       padding: 9px 18px;
+      border: 0;
+      border-radius: 10px;
+      font-weight: 800;
       font-size: 14px;
+      cursor: pointer;
     }
-
-    .result-btn.primary {
-      background: #C2185B;
-      color: #fff;
+    .result-btn.primary { color: #fff; background: #173f6c; }
+    .result-btn.secondary { color: #173f6c; background: #eaf0f6; }
+    .result-note {
+      min-height: 17px;
+      margin-top: 7px;
+      text-align: center;
+      color: #66758a;
+      font-size: 12px;
+      overflow-wrap: anywhere;
     }
-
-    .result-btn.primary:hover { background: #8E1245; }
-
-
-    .analysis-section {
-      margin-top: 14px; padding: 15px; border: 1px solid #eadde3;
-      border-radius: 14px; background: #fff;
+    .result-note.error { color: #a12d2d; }
+    @media (max-width: 700px) {
+      body.result-page { padding: 8px; align-items: flex-start; }
+      .result-container { padding: 13px; border-radius: 15px; }
+      .candidate-card { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+      .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+      .stat-card { padding: 9px 10px; }
+      .stat-label { font-size: 12px; }
+      .result-btn { min-width: 125px; }
     }
-    .analysis-title { margin:0 0 5px; color:#171717; font-size:18px; font-weight:900; }
-    .analysis-note { margin:0 0 12px; color:#687386; font-size:12px; line-height:1.5; }
-    .analysis-status { color:#8E1245; font-size:12px; font-weight:700; min-height:18px; }
-    .subject-list { display:grid; gap:10px; }
-    .subject-card { padding:12px; border:1px solid #eee3e8; border-radius:11px; background:#fff; }
-    .subject-top { display:flex; justify-content:space-between; gap:10px; align-items:center; margin-bottom:8px; }
-    .subject-name { color:#171717; font-weight:900; font-size:14px; }
-    .subject-accuracy { color:#8E1245; font-weight:900; font-size:13px; }
-    .subject-meta { color:#687386; font-size:11px; margin-top:6px; }
-    .bar-track { height:9px; border-radius:20px; background:#f1e9ed; overflow:hidden; }
-    .bar-fill { height:100%; border-radius:20px; background:#C2185B; }
-    .topic-list { display:grid; gap:6px; margin-top:10px; }
-    .topic-row { display:flex; justify-content:space-between; gap:10px; color:#596477; font-size:11px; }
-    .behaviour-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
-    .behaviour-card { padding:11px; border:1px solid #eee3e8; border-radius:10px; background:#fff; }
-    .behaviour-label { color:#596477; font-size:11px; line-height:1.35; font-weight:800; }
-    .behaviour-value { color:#171717; font-size:23px; font-weight:900; margin-top:4px; }
-    .behaviour-sub { color:#687386; font-size:10px; margin-top:3px; }
-    .coverage-note { margin-top:9px; color:#687386; font-size:11px; }
-    .history-view-btn:disabled { opacity:.55; cursor:not-allowed; }
-    @media(max-width:760px) { .behaviour-grid {grid-template-columns:repeat(2,minmax(0,1fr));} .analysis-section{padding:11px;} }
-
-    @media (max-width: 760px) {
-      body.result-page { padding: 8px; }
-      .result-container { padding: 13px 12px 10px; border-radius: 14px; }
-      .institution-heading { font-size: clamp(15px, 4.2vw, 20px); letter-spacing: .035em; }
-      .result-heading { margin-bottom: 9px; font-size: 27px; }
-      .candidate-card { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px 10px; padding: 9px 10px; margin-bottom: 9px; }
-      .candidate-line { font-size: 12px; }
-      .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; margin-bottom: 9px; }
-      .stat-card { min-height: 62px; padding: 7px 10px; border-radius: 10px; }
-      .stat-label { font-size: 11px; }
-      .stat-value { font-size: 23px; }
-      .history-section { padding: 10px; }
-      .history-heading { font-size: 16px; }
-      .history-item { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 9px; }
-      .history-item-date { grid-column: 1 / -1; font-size: 12px; }
-      .history-view-btn { grid-column: 1 / -1; width: 100%; }
-      .history-metric { font-size: 10px; }
-      .history-metric strong { font-size: 13px; }
-      .result-actions { gap: 8px; }
-      .result-btn { min-width: 0; min-height: 38px; padding: 8px 10px; font-size: 13px; }
-    }
-
-    @media (max-width: 360px) {
-      .candidate-line { font-size: 11px; }
-      .stat-card { min-height: 58px; }
-      .stat-value { font-size: 21px; }
+    @media (max-height: 650px) and (min-width: 701px) {
+      body.result-page { padding: 6px; }
+      .result-container { padding: 10px 14px; }
+      .candidate-card { padding: 8px 12px; margin-bottom: 7px; }
+      .stats-grid { gap: 6px; }
+      .stat-card { padding: 7px 11px; }
+      .result-actions { margin-top: 7px; }
+      .result-btn { min-height: 36px; }
     }
   </style>
 </head>
-
 <body class="result-page">
   <main class="result-container">
-    <h2 class="institution-heading">DAMS TRIVANDRUM MOCK TEST SERIES</h2>
-    <h1 class="result-heading">Result</h1>
+    <h1 class="brand-heading">DAMS TRIVANDRUM MOCK TEST SERIES</h1>
+    <h2 class="result-heading">Result</h2>
 
     <section class="candidate-card" aria-label="Candidate details">
       <div class="candidate-line"><strong>Name:</strong> <span id="candName">-</span></div>
@@ -325,391 +149,23 @@
       <div class="candidate-line"><strong>Phone:</strong> <span id="candPhone">-</span></div>
     </section>
 
-    <p class="result-view-label" id="resultViewLabel" aria-live="polite">Latest result</p>
-
     <section class="stats-grid" aria-label="Examination result">
       <div class="stat-card"><div class="stat-label">Score</div><div class="stat-value" id="score">-</div></div>
       <div class="stat-card"><div class="stat-label">Correct</div><div class="stat-value" id="correct">-</div></div>
       <div class="stat-card"><div class="stat-label">Wrong</div><div class="stat-value" id="wrong">-</div></div>
       <div class="stat-card"><div class="stat-label">Unattempted</div><div class="stat-value" id="unattempted">-</div></div>
       <div class="stat-card"><div class="stat-label">Time Taken</div><div class="stat-value" id="timeTaken">-</div></div>
-      <div class="stat-card"><div class="stat-label">Violations</div><div class="stat-value" id="violations">-</div></div>
-    </section>
-
-    <section class="analysis-section" aria-labelledby="subjectAnalysisHeading">
-      <h2 class="analysis-title" id="subjectAnalysisHeading">Subject-wise Performance</h2>
-      <p class="analysis-note">Correctness and accuracy are calculated securely using the private AnswerKey. Subjects without metadata appear as Unclassified.</p>
-      <div class="analysis-status" id="analysisStatus" role="status" aria-live="polite">Select a result to load its analysis.</div>
-      <div class="subject-list" id="subjectList"></div>
-      <div class="coverage-note" id="metadataCoverage"></div>
-    </section>
-
-    <section class="analysis-section" aria-labelledby="behaviourHeading">
-      <h2 class="analysis-title" id="behaviourHeading">Behavioral Analytics</h2>
-      <p class="analysis-note">Shows answer and review-marker patterns. These are behavioral indicators, not a direct measure of confidence.</p>
-      <div class="behaviour-grid" id="behaviourGrid">
-        <div class="behaviour-card"><div class="behaviour-label">Answered · Not marked</div><div class="behaviour-value">-</div></div>
-        <div class="behaviour-card"><div class="behaviour-label">Answered · Marked</div><div class="behaviour-value">-</div></div>
-        <div class="behaviour-card"><div class="behaviour-label">Review · Unanswered</div><div class="behaviour-value">-</div></div>
-        <div class="behaviour-card"><div class="behaviour-label">Unanswered · Not marked</div><div class="behaviour-value">-</div></div>
-      </div>
-    </section>
-
-    <section class="history-section" aria-labelledby="historyHeading">
-      <div class="history-heading-row">
-        <h2 class="history-heading" id="historyHeading">Previous Mock Test Results</h2>
-        <span class="history-count" id="historyCount"></span>
-      </div>
-      <p class="history-status" id="historyStatus" role="status" aria-live="polite">Loading result history...</p>
-      <div class="history-list" id="historyList"></div>
-      <div class="load-more-wrap">
-        <button class="load-more-btn" id="loadMoreBtn" type="button" hidden>Load More</button>
-      </div>
+      <div class="stat-card"><div class="stat-label">Violations</div><div class="stat-value" id="violations">0</div></div>
     </section>
 
     <div class="result-actions">
       <button class="result-btn primary" type="button" onclick="backToLogin()">Logout</button>
+      <button class="result-btn secondary" type="button" onclick="backToLogin()">Back to Login</button>
     </div>
+    <div class="result-note" id="statusNote" role="status" aria-live="polite">Loading result…</div>
   </main>
 
-  <script src="config.js?v=20261112-history"></script>
-  <script>
-    'use strict';
-
-    function safeParse(value) {
-      try { return JSON.parse(value); } catch (error) { return null; }
-    }
-
-    function setText(id, value, fallback) {
-      const element = document.getElementById(id);
-      if (!element) return;
-      element.textContent = value !== undefined && value !== null && value !== ''
-        ? String(value)
-        : fallback;
-    }
-
-    function formatTime(seconds) {
-      const sec = Number(seconds);
-      if (!Number.isFinite(sec) || sec < 0) return '-';
-      const h = Math.floor(sec / 3600);
-      const m = Math.floor((sec % 3600) / 60);
-      const s = Math.floor(sec % 60);
-      if (h > 0) return h + ' hr ' + m + ' min ' + s + ' sec';
-      if (m > 0) return m + ' min ' + s + ' sec';
-      return s + ' sec';
-    }
-
-    function formatHistoryDate(item) {
-      const raw = item.submittedAtISO || item.submittedAt || '';
-      if (!raw) return 'Date not available';
-      const date = new Date(raw);
-      if (!Number.isNaN(date.getTime())) {
-        return new Intl.DateTimeFormat('en-IN', {
-          timeZone: 'Asia/Kolkata',
-          day: '2-digit', month: 'short', year: 'numeric',
-          hour: '2-digit', minute: '2-digit', hour12: true
-        }).format(date);
-      }
-      return String(item.submittedAt || raw);
-    }
-
-    function candidateWindowStorageKey(prefix, candidateId) {
-      const cid = encodeURIComponent(String(candidateId || '').trim());
-      const startMs = Number.isFinite(window.EXAM_START_MS) ? window.EXAM_START_MS : 0;
-      const endMs = Number.isFinite(window.EXAM_END_MS) ? window.EXAM_END_MS : 0;
-      return prefix + '_' + cid + '_' + startMs + '_' + endMs;
-    }
-
-    const candidate = safeParse(sessionStorage.getItem('neet_candidate') || '') || {};
-    const candidateId = String(candidate.candidateId || candidate.id || '').trim();
-    let historyNextOffset = null;
-    let historyLoading = false;
-    let historyLoaded = 0;
-    let hasLocalResult = false;
-
-    function renderResult(result, label) {
-      const item = result || {};
-      setText('score', item.score !== undefined ? item.score : (item.marks !== undefined ? item.marks : '-'), '-');
-      setText('correct', item.correct !== undefined ? item.correct : (item.correctCount !== undefined ? item.correctCount : '-'), '-');
-      setText('wrong', item.wrong !== undefined ? item.wrong : (item.wrongCount !== undefined ? item.wrongCount : '-'), '-');
-      setText('unattempted', item.unattempted !== undefined ? item.unattempted : (item.unanswered !== undefined ? item.unanswered : '-'), '-');
-      setText('timeTaken', formatTime(item.timeTakenSec !== undefined ? item.timeTakenSec : item.timeTaken), '-');
-      setText('violations', item.violations !== undefined ? item.violations : (item.violationCount !== undefined ? item.violationCount : 0), '0');
-      setText('resultViewLabel', label || 'Selected result', 'Selected result');
-    }
-
-
-    function clearAnalysis(message) {
-      document.getElementById('subjectList').replaceChildren();
-      document.getElementById('metadataCoverage').textContent = '';
-      document.getElementById('analysisStatus').textContent = message || '';
-      const grid = document.getElementById('behaviourGrid');
-      grid.replaceChildren();
-      [
-        'Answered · Not marked','Answered · Marked',
-        'Review · Unanswered','Unanswered · Not marked'
-      ].forEach(function(label) {
-        const card=document.createElement('div'); card.className='behaviour-card';
-        const title=document.createElement('div'); title.className='behaviour-label'; title.textContent=label;
-        const value=document.createElement('div'); value.className='behaviour-value'; value.textContent='-';
-        card.append(title,value); grid.appendChild(card);
-      });
-    }
-
-    function renderAnalysis(data) {
-      const subjectList=document.getElementById('subjectList');
-      subjectList.replaceChildren();
-      const subjects=Array.isArray(data.subjectAnalysis)?data.subjectAnalysis:[];
-      if (!subjects.length) {
-        document.getElementById('analysisStatus').textContent='No subject analysis data available.';
-      } else {
-        document.getElementById('analysisStatus').textContent='Analysis loaded for this result.';
-      }
-      subjects.forEach(function(subject) {
-        const card=document.createElement('article'); card.className='subject-card';
-        const top=document.createElement('div'); top.className='subject-top';
-        const name=document.createElement('div'); name.className='subject-name'; name.textContent=subject.subject || 'Unclassified';
-        const accuracy=document.createElement('div'); accuracy.className='subject-accuracy';
-        accuracy.textContent=Number(subject.accuracy || 0).toFixed(1)+'% accuracy';
-        top.append(name,accuracy); card.appendChild(top);
-        const track=document.createElement('div'); track.className='bar-track';
-        const fill=document.createElement('div'); fill.className='bar-fill';
-        fill.style.width=Math.max(0,Math.min(100,Number(subject.accuracy)||0))+'%';
-        track.appendChild(fill); card.appendChild(track);
-        const meta=document.createElement('div'); meta.className='subject-meta';
-        meta.textContent='Correct '+(subject.correct||0)+' · Wrong '+(subject.wrong||0)+' · Unattempted '+(subject.unattempted||0)+' · Total '+(subject.total||0);
-        card.appendChild(meta);
-        if (Array.isArray(subject.topics) && subject.topics.length) {
-          const topics=document.createElement('div'); topics.className='topic-list';
-          subject.topics.forEach(function(topic) {
-            const row=document.createElement('div'); row.className='topic-row';
-            const left=document.createElement('span'); left.textContent=topic.topic;
-            const right=document.createElement('strong'); right.textContent=(topic.correct||0)+' correct / '+(topic.attempted||0)+' attempted · '+Number(topic.accuracy||0).toFixed(1)+'%';
-            row.append(left,right); topics.appendChild(row);
-          });
-          card.appendChild(topics);
-        }
-        subjectList.appendChild(card);
-      });
-      const coverage=data.metadataCoverage || {};
-      document.getElementById('metadataCoverage').textContent =
-        'Question metadata coverage: '+Number(coverage.classified||0)+' / '+Number(coverage.total||0)+
-        ' questions classified; '+Number(coverage.unclassified||0)+' unclassified.';
-
-      const b=data.behaviouralAnalysis || {};
-      const cards=[
-        ['Answered · Not marked',b.answeredUnmarked],
-        ['Answered · Marked',b.answeredMarked],
-        ['Review · Unanswered',b.reviewUnanswered],
-        ['Unanswered · Not marked',b.unanswered]
-      ];
-      const grid=document.getElementById('behaviourGrid'); grid.replaceChildren();
-      cards.forEach(function(entry) {
-        const stats=entry[1]||{};
-        const card=document.createElement('div'); card.className='behaviour-card';
-        const label=document.createElement('div'); label.className='behaviour-label'; label.textContent=entry[0];
-        const value=document.createElement('div'); value.className='behaviour-value'; value.textContent=String(stats.total||0);
-        card.append(label,value);
-        if (stats.correct !== undefined) {
-          const sub=document.createElement('div'); sub.className='behaviour-sub';
-          sub.textContent='Correct '+(stats.correct||0)+' · Wrong '+(stats.wrong||0);
-          card.appendChild(sub);
-        }
-        grid.appendChild(card);
-      });
-    }
-
-    async function loadAnalysis(examWindowId) {
-      clearAnalysis('Loading analysis for selected result...');
-      if (!examWindowId) {
-        clearAnalysis('Analysis unavailable for this legacy result (missing exam window ID).');
-        return;
-      }
-      try {
-        const response=await fetch(window.API_URL || window.SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},cache:'no-store',body:JSON.stringify({
-          action:'getResultAnalysis', token:candidate.token, candidateId:candidateId, examWindowId:examWindowId
-        })});
-        const raw=await response.text();
-        let data; try {data=JSON.parse(raw);} catch(e){throw new Error('Invalid analysis response from server.');}
-        if (!response.ok || data.ok===false) throw new Error(data.error || 'Analysis request failed.');
-        renderAnalysis(data);
-      } catch(error) {
-        clearAnalysis('Could not load analysis: '+(error.message || String(error)));
-      }
-    }
-
-    function addHistoryItem(item, index) {
-      const row = document.createElement('article');
-      row.className = 'history-item';
-
-      const date = document.createElement('div');
-      date.className = 'history-item-date';
-      date.textContent = formatHistoryDate(item);
-      row.appendChild(date);
-
-      const metrics = [
-        ['Score', item.score],
-        ['Correct', item.correct],
-        ['Wrong', item.wrong],
-        ['Unattempted', item.unattempted]
-      ];
-
-      metrics.forEach(function(metric) {
-        const cell = document.createElement('div');
-        cell.className = 'history-metric';
-        cell.appendChild(document.createTextNode(metric[0]));
-        const value = document.createElement('strong');
-        value.textContent = metric[1] === undefined || metric[1] === null ? '-' : String(metric[1]);
-        cell.appendChild(value);
-        row.appendChild(cell);
-      });
-
-      const viewButton = document.createElement('button');
-      viewButton.type = 'button';
-      viewButton.className = 'history-view-btn';
-      viewButton.textContent = 'View Result';
-      viewButton.setAttribute('aria-label', 'View result from ' + formatHistoryDate(item));
-      viewButton.disabled = item.canOpen === false || !item.examWindowId;
-      if (viewButton.disabled) viewButton.title = 'Detailed analysis is unavailable for this legacy result.';
-      viewButton.addEventListener('click', function() {
-        renderResult(item, 'Selected historical result · ' + formatHistoryDate(item));
-        loadAnalysis(item.examWindowId);
-        window.scrollTo({top:0, behavior:'smooth'});
-      });
-      row.appendChild(viewButton);
-
-      document.getElementById('historyList').appendChild(row);
-      historyLoaded++;
-    }
-
-    async function requestHistory(offset) {
-      const apiUrl = window.API_URL || window.SCRIPT_URL || '';
-      if (!apiUrl) throw new Error('API_URL is missing in config.js.');
-
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {'Content-Type':'text/plain;charset=utf-8'},
-        cache: 'no-store',
-        body: JSON.stringify({
-          action: 'getResultHistory',
-          token: candidate.token,
-          candidateId: candidateId,
-          limit: 20,
-          offset: offset
-        })
-      });
-
-      const text = await response.text();
-      let data;
-      try { data = JSON.parse(text); }
-      catch (error) { throw new Error('The server returned an invalid response. Check the Test Web App URL.'); }
-
-      if (!response.ok || data.ok === false) {
-        throw new Error(data.error || data.message || ('HTTP ' + response.status));
-      }
-      if (!Array.isArray(data.history)) throw new Error('The history response format is invalid.');
-      return data;
-    }
-
-    async function loadHistory(loadMore) {
-      if (historyLoading) return;
-      if (loadMore && historyNextOffset === null) return;
-
-      historyLoading = true;
-      const status = document.getElementById('historyStatus');
-      const loadButton = document.getElementById('loadMoreBtn');
-      loadButton.disabled = true;
-      status.textContent = loadMore ? 'Loading more results...' : 'Loading result history...';
-
-      try {
-        const offset = loadMore ? historyNextOffset : 0;
-        const data = await requestHistory(offset);
-        const list = document.getElementById('historyList');
-
-        if (!loadMore) {
-          list.replaceChildren();
-          historyLoaded = 0;
-        }
-
-        data.history.forEach(addHistoryItem);
-        historyNextOffset = data.nextOffset === null || data.nextOffset === undefined
-          ? null
-          : Number(data.nextOffset);
-
-        setText('historyCount', Number(data.totalCount || 0) + ' attempt(s)', '');
-
-        if (data.history.length === 0 && historyLoaded === 0) {
-          status.textContent = 'No submitted results were found for this candidate.';
-        } else {
-          status.textContent = 'Your submitted results are shown below, newest first.';
-        }
-
-        loadButton.hidden = historyNextOffset === null;
-        loadButton.disabled = false;
-
-        // If local result data is unavailable (for example, another device),
-        // show the latest server-stored summary automatically.
-        if (!loadMore && !hasLocalResult && data.history.length > 0) {
-          renderResult(data.history[0], 'Latest result · ' + formatHistoryDate(data.history[0]));
-        }
-      } catch (error) {
-        status.textContent = 'Could not load result history: ' + (error.message || String(error)) +
-          '. The result currently saved on this device is still available above.';
-        loadButton.hidden = true;
-      } finally {
-        historyLoading = false;
-        loadButton.disabled = false;
-      }
-    }
-
-    function clearExamStorage() {
-      // Clear only this tab's login session and legacy unscoped keys.
-      // Candidate/window-specific exam and result records are preserved.
-      sessionStorage.removeItem('neet_candidate');
-      [
-        'neet_candidate', 'neet_submitted', 'neet_result',
-        'neet_pending_submission', 'candidateId', 'token',
-        'candidateName', 'candidatePhone', 'candidateEmail'
-      ].forEach(function(key) { localStorage.removeItem(key); });
-    }
-
-    function backToLogin() {
-      clearExamStorage();
-      window.location.href = 'login.html?v=' + Date.now();
-    }
-
-    document.getElementById('loadMoreBtn').addEventListener('click', function() {
-      loadHistory(true);
-    });
-
-    (function initialiseResultPage() {
-      if (!candidateId || !candidate.token) {
-        window.location.replace('login.html?v=' + Date.now());
-        return;
-      }
-
-      setText('candName', candidate.name, '-');
-      setText('candId', candidateId, '-');
-      setText('candEmail', candidate.email, '-');
-      setText('candPhone', candidate.phone, '-');
-
-      const resultKey = candidateWindowStorageKey('neet_result', candidateId);
-      let localResult = safeParse(localStorage.getItem(resultKey) || '') || {};
-      if (localResult.candidateId && String(localResult.candidateId).trim() !== candidateId) {
-        localResult = {};
-      }
-
-      hasLocalResult = Object.keys(localResult).length > 0;
-      if (hasLocalResult) {
-        renderResult(localResult, 'Latest result on this device');
-      } else {
-        renderResult({}, 'Latest result');
-      }
-
-      if (localResult.examWindowId) loadAnalysis(localResult.examWindowId);
-      else clearAnalysis('Select a result from history to load subject and behavioral analysis.');
-      loadHistory(false);
-    })();
-  </script>
+  <script src="config.js?v=20261112_qr_a"></script>
+  <script src="result.js?v=20261112_qr_a"></script>
 </body>
 </html>
