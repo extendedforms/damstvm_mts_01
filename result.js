@@ -402,20 +402,17 @@
   async function selectHistoryResult(item) {
     if (!item || !item.examWindowId) return;
     state.selectedWindowId = item.examWindowId;
-    setStatus('statusNote', 'Loading selected examination result…', false);
 
-    try {
-      var result = await api('getResult', { examWindowId: item.examWindowId });
-      renderResult(result);
-      setStatus('statusNote', 'Selected examination result loaded successfully.', false);
-      await Promise.all([
-        loadAnalysis(item.examWindowId, item.examName || item.submittedAt),
-        loadAnswerKeyLink(item.examWindowId)
-      ]);
-    } catch (error) {
-      setStatus('statusNote', error.message || 'Unable to load selected result.', true);
-      clearAnalysis(error.message || 'Unable to load analysis.');
-    }
+    // getResultHistory returns score/correct/wrong/unattempted/time/violations
+    // for this authenticated candidate. Render that summary immediately;
+    // then fetch the heavier analysis and Answer Key state in parallel.
+    renderResult(item);
+    setStatus('statusNote', 'Result summary loaded. Updating analysis and Answer Key access…', false);
+    await Promise.all([
+      loadAnalysis(item.examWindowId, item.examName || item.submittedAt),
+      loadAnswerKeyLink(item.examWindowId)
+    ]);
+    setStatus('statusNote', 'Selected examination result loaded successfully.', false);
   }
 
   async function loadCurrentResult() {
@@ -475,16 +472,6 @@
     sessionStorage.removeItem('neet_exam_approval_request');
     location.replace('login.html?v=' + Date.now());
   };
-
-  // Small visual press feedback for every result-page button.
-  document.addEventListener('click', function (event) {
-    var button = event.target && event.target.closest ? event.target.closest('button') : null;
-    if (!button || button.disabled) return;
-    button.classList.remove('feedback');
-    void button.offsetWidth;
-    button.classList.add('feedback');
-    window.setTimeout(function () { button.classList.remove('feedback'); }, 220);
-  }, true);
 
   document.addEventListener('DOMContentLoaded', async function () {
     state.candidate = candidateFromSession();
