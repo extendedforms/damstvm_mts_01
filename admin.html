@@ -1,29 +1,126 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#071a32">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#071a32">
 <title>DAMS CBT Centre Admin</title>
 <style>
-*{box-sizing:border-box}body{margin:0;padding:20px;background:#f1f4f8;color:#172b45;font-family:Arial,sans-serif}.wrap{max-width:1100px;margin:auto}.panel{background:#fff;border:1px solid #dfe6ee;border-radius:14px;padding:18px;margin:14px 0;box-shadow:0 5px 18px #0b234010}h1{color:#0c2d50;margin:4px 0 6px}.muted{color:#63748a;font-size:13px}.row{display:flex;gap:9px;flex-wrap:wrap;align-items:center}input,select{padding:11px;border:1px solid #cbd5e1;border-radius:8px;min-width:180px;flex:1;max-width:100%}button{padding:10px 14px;border:0;border-radius:8px;background:#174a7c;color:#fff;font-weight:700;cursor:pointer}button.secondary{background:#e9eff6;color:#173f6c}button.danger{background:#a52636}button.success{background:#177245}button:disabled{opacity:.5;cursor:not-allowed}table{width:100%;border-collapse:collapse;font-size:13px}td,th{text-align:left;border-bottom:1px solid #e3e8ef;padding:9px;vertical-align:top;overflow-wrap:anywhere}.table-wrap{overflow-x:auto}#dashboard{display:none}#loginPanel{max-width:460px;margin:7vh auto}.notice{padding:10px;background:#eef3f9;border-radius:8px;margin-top:10px;white-space:pre-wrap;font-size:13px}.error{color:#a11;background:#fff0f0}.section-title{margin:0 0 12px}.check{min-width:auto;flex:0}.file-config{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.file-config input{min-width:260px}video{width:min(100%,480px);background:#101820;border-radius:10px;display:none;margin-top:12px}#cameraMsg{font-size:13px;color:#617086}.status{font-weight:700}.status.GRANTED,.status.ALREADY_GRANTED,.status.EXTERNAL{color:#177245}.status.NOT_GRANTED,.status.REVOKED{color:#63748a}.status.OLD_FILE{color:#a52636}.small{font-size:12px}
+*{box-sizing:border-box}
+body{margin:0;padding:20px;background:#f1f4f8;color:#172b45;font-family:Arial,sans-serif}
+.wrap{max-width:1180px;margin:auto}
+.panel{background:#fff;border:1px solid #dfe6ee;border-radius:14px;padding:18px;margin:14px 0;box-shadow:0 5px 18px #0b234010}
+h1{color:#0c2d50;margin:4px 0 6px}
+h2{color:#173f6c}
+.muted{color:#63748a;font-size:13px;line-height:1.5}
+.row{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+input,select{padding:11px;border:1px solid #cbd5e1;border-radius:8px;min-width:180px;flex:1;max-width:100%;font:inherit}
+button{padding:10px 14px;border:0;border-radius:8px;background:#174a7c;color:#fff;font-weight:700;cursor:pointer;transition:transform .12s ease,box-shadow .12s ease,filter .12s ease;position:relative}
+button:hover:not(:disabled){filter:brightness(1.08);box-shadow:0 3px 10px #0b234022}
+button:active:not(:disabled),button.feedback:not(:disabled){transform:translateY(1px) scale(.98);box-shadow:inset 0 2px 5px #0003,0 0 0 3px #4d8bc455}
+button.secondary{background:#e9eff6;color:#173f6c}
+button.danger{background:#a52636}
+button.success{background:#177245}
+button:disabled{opacity:.5;cursor:not-allowed;filter:grayscale(.2)}
+button[aria-busy="true"]{cursor:progress;opacity:.78}
+button[aria-busy="true"]:before{content:"";display:inline-block;width:11px;height:11px;margin-right:8px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;vertical-align:-1px;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td,th{text-align:left;border-bottom:1px solid #e3e8ef;padding:9px;vertical-align:top;overflow-wrap:anywhere}
+th{background:#f7f9fc;color:#294766;white-space:nowrap}
+.table-wrap{overflow-x:auto;border:1px solid #e3e8ef;border-radius:9px}
+#dashboard{display:none}
+#loginPanel{max-width:460px;margin:7vh auto}
+.notice{padding:10px;background:#eef3f9;border-radius:8px;margin-top:10px;white-space:pre-wrap;font-size:13px;line-height:1.5}
+.error{color:#a11;background:#fff0f0}
+.section-title{margin:0 0 12px}
+.check{min-width:auto;flex:0}
+.file-config{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.file-config input{min-width:260px}
+video{width:min(100%,480px);background:#101820;border-radius:10px;display:none;margin-top:12px}
+#cameraMsg{font-size:13px;color:#617086}
+.status{font-weight:700}
+.status.GRANTED,.status.ALREADY_GRANTED,.status.EXTERNAL{color:#177245}
+.status.NOT_GRANTED,.status.REVOKED{color:#63748a}
+.status.OLD_FILE{color:#a52636}
+.small{font-size:12px}
+.rank-change.up{color:#177245;font-weight:800}
+.rank-change.down{color:#a52636;font-weight:800}
+.rank-change.same{color:#63748a;font-weight:700}
+.rank-highlight{font-weight:800;color:#173f6c}
+#rankSearchInput{max-width:320px}
+@media(max-width:650px){body{padding:9px}.panel{padding:12px}.row>*{min-width:0}#rankSearchInput{max-width:none;width:100%}button{min-height:40px}}
 </style>
 </head>
-<body><main class="wrap">
-<header><h1>DAMS TRIVANDRUM — CBT Centre Admin</h1><p class="muted">Authenticated admin console • direct exam-wise approval • Google Drive Answer Key permissions • audit</p></header>
-<section class="panel" id="loginPanel"><h2>Admin Login</h2><div class="row"><input id="adminUser" autocomplete="username" placeholder="Admin username"><input id="adminPass" type="password" autocomplete="current-password" placeholder="Admin password"></div><p><button id="loginBtn">Sign in</button></p><div id="loginMsg" class="notice">Use credentials configured in Apps Script Script Properties.</div></section>
-<div id="dashboard">
-<section class="panel"><div class="row"><h2 class="section-title" style="flex:1">Pending exam approval requests</h2><button id="refreshBtn" class="secondary">Refresh</button></div><div class="table-wrap"><table><thead><tr><th>Candidate</th><th>Email</th><th>Selected exam</th><th>Device</th><th>Requested</th><th>Expires</th><th>Decision</th></tr></thead><tbody id="pendingBody"></tbody></table></div><div id="actionMsg" class="notice">No pending exam approval action performed.</div></section>
-<section class="panel"><h2 class="section-title">Google Drive Answer Key permissions</h2><p class="muted">Choose an exam. Only candidates with a submitted result for that exact exam window become eligible, and permissions remain locked until its official end time. Grant reader access individually or in sequential bulk batches.</p>
-<div class="row"><select id="answerExamSelect"><option value="">Loading exam windows…</option></select><button id="refreshAnswerKeyBtn" class="secondary">Refresh candidates</button></div>
-<div class="file-config"><input id="answerKeyFileId" placeholder="Private Answer Key PDF Drive file ID or URL"><button id="saveAnswerKeyFileBtn">Save PDF for this exam</button></div>
-<div id="answerKeyInfo" class="notice">Select an exam to inspect eligible submitted candidates.</div>
-<div class="row" style="margin:12px 0"><label class="row small"><input id="selectAllAnswerCandidates" class="check" type="checkbox"> Select all eligible candidates</label><button id="bulkGrantAnswerKeyBtn" class="success">Grant selected (bulk)</button></div>
-<div class="table-wrap"><table><thead><tr><th>Select</th><th>Candidate</th><th>Registered email</th><th>Score</th><th>Submitted</th><th>Drive status</th><th>Action</th></tr></thead><tbody id="answerKeyCandidatesBody"></tbody></table></div>
-<div id="answerKeyActionMsg" class="notice">No permission action performed.</div>
+<body>
+<main class="wrap">
+<header>
+  <h1>DAMS TRIVANDRUM — CBT Centre Admin</h1>
+  <p class="muted">Authenticated admin console • direct exam-wise approval • overall ranks and progress • Google Drive Answer Key permissions • audit</p>
+</header>
+
+<section class="panel" id="loginPanel">
+  <h2>Admin Login</h2>
+  <div class="row">
+    <input id="adminUser" autocomplete="username" placeholder="Admin username">
+    <input id="adminPass" type="password" autocomplete="current-password" placeholder="Admin password">
+  </div>
+  <p><button id="loginBtn" type="button">Sign in</button></p>
+  <div id="loginMsg" class="notice" role="status" aria-live="polite">Use credentials configured in Apps Script Script Properties.</div>
 </section>
-<section class="panel"><h2 class="section-title">Active centre authorizations</h2><div class="table-wrap"><table><thead><tr><th>Candidate</th><th>Centre</th><th>Authorized at</th><th>Last heartbeat</th><th>Action</th></tr></thead><tbody id="sessionsBody"></tbody></table></div></section>
-<section class="panel"><h2 class="section-title">Recent audit events</h2><div class="table-wrap"><table><thead><tr><th>Time</th><th>Candidate</th><th>Event</th><th>Admin</th><th>Details</th></tr></thead><tbody id="auditBody"></tbody></table></div></section>
-<p><button id="logoutAdmin" class="secondary">Admin logout</button></p>
-</div></main>
-<script src="config.js?v=20261113_direct_approval_v2"></script>
-<script src="admin.js?v=20261113_fast_approval_v3"></script></script>
-</body></html>
+
+<div id="dashboard">
+<section class="panel">
+  <div class="row"><h2 class="section-title" style="flex:1">Pending exam approval requests</h2><button id="refreshBtn" class="secondary" type="button">Refresh dashboard</button></div>
+  <div class="table-wrap"><table><thead><tr><th>Candidate</th><th>Email</th><th>Selected exam</th><th>Device</th><th>Requested</th><th>Expires</th><th>Decision</th></tr></thead><tbody id="pendingBody"></tbody></table></div>
+  <div id="actionMsg" class="notice" role="status" aria-live="polite">No pending exam approval action performed.</div>
+</section>
+
+<section class="panel" id="rankingPanel">
+  <h2 class="section-title">Overall rank list &amp; candidate progress</h2>
+  <p class="muted">The rank list becomes available only after the selected exam’s official end time. Only successfully submitted results are ranked. Progress compares each candidate with the immediately preceding configured exam. Tie-break order: higher score, lower time taken, earlier submission.</p>
+  <div class="row">
+    <select id="rankExamSelect" aria-label="Choose exam for rank list"><option value="">Loading exam windows…</option></select>
+    <button id="rankRefreshBtn" class="secondary" type="button">Refresh rank list</button>
+    <button id="downloadRankCsvBtn" class="success" type="button" disabled>Download CSV</button>
+    <input id="rankSearchInput" type="search" placeholder="Search candidate ID or name" aria-label="Search ranked candidates">
+  </div>
+  <div id="rankInfo" class="notice" role="status" aria-live="polite">Select a closed exam window to prepare its overall rank list.</div>
+  <div class="table-wrap" style="margin-top:10px">
+    <table>
+      <thead><tr>
+        <th>Rank</th><th>Candidate</th><th>Score</th><th>Correct</th><th>Wrong</th><th>Unattempted</th><th>Accuracy</th><th>Time taken</th><th>Previous score</th><th>Score change</th><th>Score change %</th><th>Previous rank</th><th>Rank change</th><th>Submitted</th>
+      </tr></thead>
+      <tbody id="rankBody"><tr><td colspan="14">No rank list loaded.</td></tr></tbody>
+    </table>
+  </div>
+</section>
+
+<section class="panel">
+  <h2 class="section-title">Google Drive Answer Key permissions</h2>
+  <p class="muted">Choose an exam. Only candidates with a recorded centre approval for that exact exam and a submitted result for that same exam window are eligible. Permissions remain locked until its official end time. Grant reader access individually or in sequential bulk batches.</p>
+  <div class="row"><select id="answerExamSelect"><option value="">Loading exam windows…</option></select><button id="refreshAnswerKeyBtn" class="secondary" type="button">Refresh candidates</button></div>
+  <div class="file-config"><input id="answerKeyFileId" placeholder="Private Answer Key PDF Drive file ID or URL"><button id="saveAnswerKeyFileBtn" type="button">Save PDF for this exam</button></div>
+  <div id="answerKeyInfo" class="notice" role="status" aria-live="polite">Select an exam to inspect eligible submitted candidates.</div>
+  <div class="row" style="margin:12px 0"><label class="row small"><input id="selectAllAnswerCandidates" class="check" type="checkbox"> Select all eligible candidates</label><button id="bulkGrantAnswerKeyBtn" class="success" type="button">Grant selected (bulk)</button></div>
+  <div class="table-wrap"><table><thead><tr><th>Select</th><th>Candidate</th><th>Registered email</th><th>Score</th><th>Submitted</th><th>Drive status</th><th>Action</th></tr></thead><tbody id="answerKeyCandidatesBody"></tbody></table></div>
+  <div id="answerKeyActionMsg" class="notice" role="status" aria-live="polite">No permission action performed.</div>
+</section>
+
+<section class="panel">
+  <h2 class="section-title">Active centre authorizations</h2>
+  <div class="table-wrap"><table><thead><tr><th>Candidate</th><th>Centre</th><th>Authorized at</th><th>Last heartbeat</th><th>Action</th></tr></thead><tbody id="sessionsBody"></tbody></table></div>
+</section>
+
+<section class="panel">
+  <h2 class="section-title">Recent audit events</h2>
+  <div class="table-wrap"><table><thead><tr><th>Time</th><th>Candidate</th><th>Event</th><th>Admin</th><th>Details</th></tr></thead><tbody id="auditBody"></tbody></table></div>
+</section>
+
+<p><button id="logoutAdmin" class="secondary" type="button">Admin logout</button></p>
+</div>
+</main>
+<script src="config.js?v=20261114_rank_progress_v1"></script>
+<script src="admin.js?v=20261114_rank_progress_v1"></script>
+</body>
+</html>
