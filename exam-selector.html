@@ -1,35 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#071a32">
-<title>Select Examination - DAMS CBT</title>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#071a32"><title>Select Examination - DAMS CBT</title>
 <style>
-*{box-sizing:border-box}body{margin:0;min-height:100vh;padding:24px;background:#f2f5f9;color:#132c49;font-family:Arial,sans-serif}
-.wrap{max-width:900px;margin:4vh auto}.brand{font-size:13px;letter-spacing:.12em;font-weight:800;color:#174a7c}
-h1{margin:8px 0;color:#0a2342}.subtitle{color:#617187;line-height:1.55}
-.candidate{margin:18px 0;padding:14px 16px;background:#eaf0f6;border-radius:12px;font-size:14px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:16px;margin-top:20px}
-.exam{background:#fff;border:1px solid #dce4ee;border-radius:16px;padding:20px;box-shadow:0 8px 25px rgba(15,40,70,.06);display:flex;flex-direction:column;gap:12px}
-.exam h2{margin:0;font-size:20px}.meta{font-size:14px;color:#53667d;line-height:1.6}.status{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em}
-.status.open{color:#16734a}.status.upcoming{color:#a15a00}.status.closed{color:#8b3c3c}
-button{border:0;border-radius:9px;padding:12px 15px;background:#123f6b;color:#fff;font-weight:800;cursor:pointer}
-button:disabled{opacity:.45;cursor:not-allowed}.notice{margin:16px 0;padding:12px 14px;border-radius:10px;background:#edf3fa;color:#34506e}
-.notice.error{background:#fff0f0;color:#a11}.actions{display:flex;gap:10px;justify-content:flex-end;margin-top:22px}
-@media(max-width:600px){body{padding:16px}.wrap{margin:2vh auto}.exam{padding:16px}}
-</style>
-</head>
-<body>
-<main class="wrap">
-  <div class="brand">DAMS TRIVANDRUM · ZENITH NEET PG / INICET</div>
-  <h1>Select Your Examination</h1>
-  <p class="subtitle">Choose the examination you are registered to take. Your centre QR authorization will be tied to this examination and this browser session.</p>
-  <div class="candidate" id="candidate">Verifying candidate session…</div>
-  <div id="notice" class="notice" role="status" aria-live="polite">Loading available examinations…</div>
-  <section id="examList" class="grid" aria-label="Available examinations"></section>
-  <div class="actions"><button id="logoutBtn" type="button">Cancel / Logout</button></div>
-</main>
-<script src="config.js?v=20261112_exams_v1"></script>
-<script src="exam-selector.js?v=20261112_exams_v1"></script>
-</body></html>
+*{box-sizing:border-box}body{margin:0;padding:18px;background:#f1f4f8;color:#172b45;font-family:Arial,sans-serif}.wrap{max-width:980px;margin:auto}.head{background:#0c2d50;color:#fff;border-radius:16px;padding:22px;margin:10px 0 16px}.head h1{margin:0 0 7px;font-size:25px}.muted{color:#66788e;font-size:13px;line-height:1.5}.head .muted{color:#d8e2ef}.panel{background:#fff;border:1px solid #dfe6ee;border-radius:14px;padding:18px;margin:14px 0;box-shadow:0 5px 18px #0b234010}.exam-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:12px}.exam-card{border:1px solid #d8e1eb;border-radius:12px;padding:15px;background:#fff}.exam-card.selected{border:2px solid #174a7c;background:#f5f9fd}.exam-card h3{margin:0 0 10px;color:#143b63}.meta{font-size:13px;line-height:1.65;color:#596b80}.tag{display:inline-block;padding:4px 8px;border-radius:20px;background:#edf2f7;color:#39516c;font-size:11px;font-weight:700;margin-bottom:9px}.tag.open{background:#e8f6ee;color:#176b35}.tag.upcoming{background:#fff5df;color:#805300}.tag.closed{background:#f2f3f5;color:#68778b}.btn{padding:11px 16px;border:0;border-radius:8px;background:#174a7c;color:#fff;font-weight:700;cursor:pointer}.btn.secondary{background:#e9eff6;color:#173f6c}.btn:disabled{opacity:.5;cursor:not-allowed}.row{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:14px}.notice{padding:12px;background:#eef3f9;border-radius:9px;margin-top:12px;white-space:pre-wrap;font-size:13px;line-height:1.55}.notice.error{background:#fff0f0;color:#a11}.links{margin:18px 0;text-align:center}.links a{color:#174a7c;font-weight:700;margin:0 9px}@media(max-width:600px){body{padding:10px}.head{padding:18px}.head h1{font-size:21px}}
+</style></head><body><main class="wrap">
+<header class="head"><h1>DAMS TRIVANDRUM — Select Examination</h1><div class="muted" id="candidateLine">Loading candidate session…</div></header>
+<section class="panel"><h2>Available examinations</h2><p class="muted">Sign in first, then select the exact examination you intend to attend. Admin approval is requested only for that selected exam; no approval is needed to view previously submitted results.</p><div id="examList" class="exam-list"><div class="muted">Loading examination windows…</div></div><div id="selectorStatus" class="notice" role="status" aria-live="polite">Checking available examinations…</div></section>
+<section class="panel"><h2>Exam-wise administrator approval</h2><p class="muted" id="selectedExamText">Select an examination above to continue.</p><div class="row"><button class="btn" id="requestApprovalBtn" disabled>Request Admin Approval</button><button class="btn secondary" id="refreshExamsBtn">Refresh Examinations</button><button class="btn secondary" id="logoutBtn">Logout</button></div><div id="approvalStatus" class="notice" role="status" aria-live="polite">No approval request has been made.</div></section>
+<div class="links"><a href="result.html">Previous Results / Performance Analysis</a></div>
+</main><script src="config.js?v=20261113_direct_approval_v2"></script><script src="exam-selector.js?v=20261113_direct_approval_v2"></script></body></html>
