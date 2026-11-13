@@ -1,42 +1,13 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-<title>Admin Dashboard</title>
-<style>
-table{width:100%;border-collapse:collapse}
-td,th{border:1px solid #ccc;padding:6px}
-th{background:#003366;color:white}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="refresh" content="0;url=admin.html">
+  <title>DAMS CBT Admin</title>
 </head>
 <body>
-
-<h2>All Student Results</h2>
-
-<table>
-<tr>
-<th>Roll</th><th>Name</th><th>Score</th>
-<th>Correct</th><th>Time</th><th>Violations</th>
-</tr>
-<tbody id="rows"></tbody>
-</table>
-
-<script>
-if(localStorage.getItem("admin")!=="yes"){
-  location.href="admin.html";
-}
-
-let results = JSON.parse(localStorage.getItem("results")) || [];
-results.forEach(r=>{
-  rows.innerHTML += `<tr>
-    <td>${r.roll}</td>
-    <td>${r.name}</td>
-    <td>${r.score}</td>
-    <td>${r.correct}</td>
-    <td>${r.time}</td>
-    <td>${r.violations}</td>
-  </tr>`;
-});
-</script>
-
+  <p>Opening the secure admin dashboard… <a href="admin.html">Continue</a></p>
+  <script>location.replace(new URL('admin.html', location.href).href);</script>
 </body>
 </html>
