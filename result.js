@@ -133,6 +133,13 @@
     return wrapper;
   }
 
+
+  function formatSignedScore(value) {
+    var n = Number(value);
+    if (!Number.isFinite(n)) return '—';
+    return (n > 0 ? '+' : '') + n + ' points';
+  }
+
   function renderHistory(history) {
     var list = byId('historyList');
     if (!list) return;
@@ -161,6 +168,17 @@
       row.appendChild(metric('Score', fmtNumber(item.score)));
       row.appendChild(metric('Correct / Wrong', fmtNumber(item.correct) + ' / ' + fmtNumber(item.wrong)));
       row.appendChild(metric('Unattempted', fmtNumber(item.unattempted)));
+      var hasPrevious = item.scoreChange !== null && item.scoreChange !== undefined;
+      var progressLabel = item.previousExamName ? 'Vs ' + item.previousExamName : 'Previous exam change';
+      var changeText = hasPrevious ? formatSignedScore(item.scoreChange) :
+        (item.previousExamName ? 'No submission in previous exam' : 'First configured exam');
+      if (hasPrevious && item.scoreChangePercent !== null && item.scoreChangePercent !== undefined) {
+        changeText += ' (' + (Number(item.scoreChangePercent) > 0 ? '+' : '') + Number(item.scoreChangePercent).toFixed(1) + '%)';
+      }
+      var progressMetric = metric(progressLabel, changeText);
+      if (hasPrevious && Number(item.scoreChange) > 0) progressMetric.classList.add('progress-up');
+      if (hasPrevious && Number(item.scoreChange) < 0) progressMetric.classList.add('progress-down');
+      row.appendChild(progressMetric);
 
       var button = document.createElement('button');
       button.type = 'button';
@@ -169,8 +187,13 @@
       button.disabled = !item.examWindowId;
       button.title = item.examWindowId ? 'View this examination result and analysis' :
         'This older record has no verifiable exam window ID.';
-      button.addEventListener('click', function () {
-        if (item.examWindowId) selectHistoryResult(item);
+      button.addEventListener('click', async function () {
+        if (!item.examWindowId || button.disabled) return;
+        button.disabled = true;
+        button.textContent = 'Loading…';
+        button.setAttribute('aria-busy','true');
+        try { await selectHistoryResult(item); }
+        finally { button.disabled = false; button.textContent = 'View Result'; button.removeAttribute('aria-busy'); }
       });
       row.appendChild(button);
       list.appendChild(row);
@@ -385,8 +408,10 @@
       var result = await api('getResult', { examWindowId: item.examWindowId });
       renderResult(result);
       setStatus('statusNote', 'Selected examination result loaded successfully.', false);
-      await loadAnalysis(item.examWindowId, item.examName || item.submittedAt);
-      await loadAnswerKeyLink(item.examWindowId);
+      await Promise.all([
+        loadAnalysis(item.examWindowId, item.examName || item.submittedAt),
+        loadAnswerKeyLink(item.examWindowId)
+      ]);
     } catch (error) {
       setStatus('statusNote', error.message || 'Unable to load selected result.', true);
       clearAnalysis(error.message || 'Unable to load analysis.');
@@ -451,6 +476,16 @@
     location.replace('login.html?v=' + Date.now());
   };
 
+  // Small visual press feedback for every result-page button.
+  document.addEventListener('click', function (event) {
+    var button = event.target && event.target.closest ? event.target.closest('button') : null;
+    if (!button || button.disabled) return;
+    button.classList.remove('feedback');
+    void button.offsetWidth;
+    button.classList.add('feedback');
+    window.setTimeout(function () { button.classList.remove('feedback'); }, 220);
+  }, true);
+
   document.addEventListener('DOMContentLoaded', async function () {
     state.candidate = candidateFromSession();
 
@@ -462,23 +497,15 @@
     }
 
     clearAnalysis('Select a result to load performance analysis.');
-    await Promise.all([
-      loadCurrentResult(),
-      loadHistory()
-    ]);
-
-    // History is sorted newest-first by the server. Prefer its newest
-    // verifiable record so the page shows the candidate's latest submission,
-    // even when the server's default exam window is an older examination.
-    if (state.history.length && state.history[0].examWindowId) {
-      await selectHistoryResult(state.history[0]);
-    } else if (state.selectedWindowId) {
-      var current = state.history.find(function (item) {
-        return item.examWindowId === state.selectedWindowId;
-      });
-      if (current) {
-        await loadAnalysis(current.examWindowId, current.examName || current.submittedAt);
-      }
+    // Load history first. Selecting its newest verified row retrieves the
+    // full result once; this avoids the former duplicate getResult + Answer Key
+    // requests on every page load.
+    await loadHistory();
+    var newest = state.history.find(function (item) { return !!item.examWindowId; });
+    if (newest) {
+      await selectHistoryResult(newest);
+    } else {
+      await loadCurrentResult();
     }
   });
 })();
