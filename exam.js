@@ -13,6 +13,22 @@
 
 'use strict';
 
+// Visual press feedback for every CBT button (question palette, navigation,
+// mark/clear, image controls and submit) without changing exam logic.
+(function installButtonFeedback(){
+  const style=document.createElement('style');
+  style.textContent='button{transition:transform .12s ease,box-shadow .12s ease,filter .12s ease}button:active:not(:disabled),button.cbt-button-feedback:not(:disabled){transform:translateY(1px) scale(.98);box-shadow:inset 0 2px 5px rgba(0,0,0,.18),0 0 0 3px rgba(77,139,196,.25);filter:brightness(1.05)}button[aria-busy="true"]{cursor:progress;opacity:.8}button[aria-busy="true"]:after{content:"";display:inline-block;width:10px;height:10px;margin-left:8px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;vertical-align:-1px;animation:cbtButtonSpin .7s linear infinite}@keyframes cbtButtonSpin{to{transform:rotate(360deg)}}';
+  (document.head||document.documentElement).appendChild(style);
+  document.addEventListener('click',event=>{
+    const button=event.target&&event.target.closest?event.target.closest('button'):null;
+    if(!button||button.disabled)return;
+    button.classList.remove('cbt-button-feedback');
+    void button.offsetWidth;
+    button.classList.add('cbt-button-feedback');
+    window.setTimeout(()=>button.classList.remove('cbt-button-feedback'),220);
+  },true);
+})();
+
 function safeParse(s) {
   try {
     return JSON.parse(s);
@@ -945,6 +961,11 @@ async function submitExam(
   }
 
   submitted = true;
+  if (submitBtn) {
+    if (!submitBtn.dataset.originalText) submitBtn.dataset.originalText = submitBtn.textContent;
+    submitBtn.textContent = isAuto ? 'Submitting automatically…' : 'Submitting…';
+    submitBtn.setAttribute('aria-busy','true');
+  }
 
   [
     submitBtn,
@@ -1048,6 +1069,10 @@ async function submitExam(
     );
 
     submitted = false;
+    if (submitBtn) {
+      submitBtn.textContent = submitBtn.dataset.originalText || 'Submit Exam';
+      submitBtn.removeAttribute('aria-busy');
+    }
 
     [
       submitBtn,
