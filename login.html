@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,168 +6,310 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#071a32">
 <title>DAMS TRIVANDRUM NEET PG MOCK TEST SERIES - Login</title>
+
 <style>
-:root{--login-navy:#0a2342;--login-blue:#174a7c;--login-gold:#d9ad62}
-*{box-sizing:border-box}
-html,body{min-height:100%;margin:0}
-body{
-  min-height:100vh;min-height:100svh;display:flex;align-items:center;justify-content:flex-end;
-  padding:34px clamp(24px,6vw,100px);background-color:#10243d;
-  background-image:linear-gradient(90deg,rgba(5,18,35,.38) 0%,rgba(5,18,35,.22) 48%,rgba(5,18,35,.48) 100%),url("IMG_4116.jpeg");
-  background-position:center;background-size:cover;background-repeat:no-repeat;font-family:Arial,sans-serif;
+:root {
+  --login-navy:#0a2342;
+  --login-blue:#174a7c;
+  --login-gold:#d9ad62;
 }
-.login-container{
-  width:min(570px,100%);margin:0;padding:34px clamp(25px,3.4vw,48px) 28px;
-  border:1px solid rgba(255,255,255,.82);border-radius:24px;background:rgba(255,255,255,.98);
-  box-shadow:0 24px 70px rgba(0,0,0,.32);text-align:center;
+
+* { box-sizing:border-box; }
+
+html,body {
+  min-height:100%;
+  margin:0;
 }
-.login-container:before{
-  content:"CANDIDATE PORTAL";display:block;width:max-content;margin:0 auto 18px;padding:7px 11px;
-  border-left:3px solid var(--login-gold);border-radius:3px;background:#f2f5f9;color:var(--login-blue);
-  font-size:10px;font-weight:900;letter-spacing:.16em;
+
+body {
+  min-height:100vh;
+  min-height:100svh;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  padding:34px clamp(24px,6vw,100px);
+  background-color:#10243d;
+  background-image:
+    linear-gradient(90deg,
+      rgba(5,18,35,.38) 0%,
+      rgba(5,18,35,.22) 48%,
+      rgba(5,18,35,.48) 100%
+    ),
+    url("IMG_4116.jpeg");
+  background-position:center;
+  background-size:cover;
+  background-repeat:no-repeat;
+  font-family:Arial,sans-serif;
 }
-.logo{display:block;width:min(100%,390px);height:112px;max-height:112px;object-fit:contain;margin:0 auto 14px}
-.inst-name{margin:0;color:var(--login-navy);font-size:clamp(25px,3vw,34px);font-weight:900}
-.title{margin:9px 0 27px;color:#667085;font-size:15px;font-weight:600}
-.form{display:grid;grid-template-columns:1fr 1fr;gap:13px}
-.form>input,.password-box input{
-  width:100%;min-width:0;height:52px;padding:0 14px;border:1px solid #d5dce6;border-radius:11px;
-  background:#fff;color:#172235;font:inherit;font-size:14px;outline:none;transition:border-color .15s,box-shadow .15s;
+
+.login-container {
+  width:min(570px,100%);
+  margin:0;
+  padding:34px clamp(25px,3.4vw,48px) 28px;
+  border:1px solid rgba(255,255,255,.82);
+  border-radius:24px;
+  background:rgba(255,255,255,.98);
+  box-shadow:0 24px 70px rgba(0,0,0,.32);
+  text-align:center;
 }
-.form>input:focus,.password-box input:focus{border-color:#1b5688;box-shadow:0 0 0 3px rgba(23,74,124,.12)}
-.password-box{position:relative;grid-column:1/-1}
-.password-box input{padding-right:52px}
-.toggle{
-  position:absolute;top:50%;right:11px;transform:translateY(-50%);width:36px;height:36px;
-  border:0;border-radius:8px;background:#f2f5f9;color:#52657c;cursor:pointer;font-size:18px;
+
+.login-container:before {
+  content:"CANDIDATE PORTAL";
+  display:block;
+  width:max-content;
+  margin:0 auto 18px;
+  padding:7px 11px;
+  border-left:3px solid var(--login-gold);
+  border-radius:3px;
+  background:#f2f5f9;
+  color:var(--login-blue);
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.16em;
 }
-.form>button{
-  grid-column:1/-1;width:100%;min-height:54px;margin-top:1px;border:0;border-radius:11px;
-  background:linear-gradient(100deg,#0b2b50,#1a5285);color:#fff;font-size:15px;font-weight:850;
-  letter-spacing:.04em;cursor:pointer;box-shadow:0 8px 18px rgba(11,43,80,.18);
+
+.logo {
+  display:block;
+  width:min(100%,390px);
+  height:112px;
+  max-height:112px;
+  object-fit:contain;
+  margin:0 auto 14px;
 }
-.form>button:disabled{opacity:.55;cursor:wait}
-#msg{grid-column:1/-1;min-height:18px;margin:0;text-align:center;font-size:13px;overflow-wrap:anywhere}
-.login-container:after{
-  content:"Powered by ZENITH HIGH";display:block;margin-top:24px;padding-top:17px;border-top:1px solid #e8edf3;
-  color:#7b8796;text-align:center;font-size:10px;font-weight:700;letter-spacing:.04em;
+
+.inst-name {
+  margin:0;
+  color:var(--login-navy);
+  font-size:clamp(25px,3vw,34px);
+  font-weight:900;
 }
-@media(max-width:760px){
-  body{justify-content:center;padding:22px 14px;background-position:center;background-attachment:scroll}
-  .login-container{width:min(520px,100%);padding:26px 20px 22px;border-radius:20px}
-  .logo{height:90px;max-height:90px;width:min(100%,330px)}
-  .form{grid-template-columns:1fr;gap:11px}
-  .password-box,.form>button,#msg{grid-column:1}
-  .form>input,.password-box input{height:50px;font-size:16px}
+
+.title {
+  margin:9px 0 27px;
+  color:#667085;
+  font-size:15px;
+  font-weight:600;
 }
-@media(max-width:380px){.login-container{padding:22px 16px 19px}.logo{height:78px}}
+
+.form {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:13px;
+}
+
+.form>input,
+.password-box input {
+  width:100%;
+  min-width:0;
+  height:52px;
+  padding:0 14px;
+  border:1px solid #d5dce6;
+  border-radius:11px;
+  background:#fff;
+  color:#172235;
+  font:inherit;
+  font-size:14px;
+  outline:none;
+  transition:border-color .15s,box-shadow .15s;
+}
+
+.form>input:focus,
+.password-box input:focus {
+  border-color:#1b5688;
+  box-shadow:0 0 0 3px rgba(23,74,124,.12);
+}
+
+.password-box {
+  position:relative;
+  grid-column:1/-1;
+}
+
+.password-box input {
+  padding-right:52px;
+}
+
+.toggle {
+  position:absolute;
+  top:50%;
+  right:11px;
+  transform:translateY(-50%);
+  width:36px;
+  height:36px;
+  border:0;
+  border-radius:8px;
+  background:#f2f5f9;
+  color:#52657c;
+  cursor:pointer;
+  font-size:18px;
+}
+
+.form>button:not(.toggle) {
+  grid-column:1/-1;
+  width:100%;
+  min-height:54px;
+  margin-top:1px;
+  border:0;
+  border-radius:11px;
+  background:linear-gradient(100deg,#0b2b50,#1a5285);
+  color:#fff;
+  font-size:15px;
+  font-weight:850;
+  letter-spacing:.04em;
+  cursor:pointer;
+  box-shadow:0 8px 18px rgba(11,43,80,.18);
+}
+
+.form>button:disabled {
+  opacity:.55;
+  cursor:wait;
+}
+
+#msg {
+  grid-column:1/-1;
+  min-height:18px;
+  margin:0;
+  text-align:center;
+  font-size:13px;
+  overflow-wrap:anywhere;
+}
+
+.login-container:after {
+  content:"Powered by ZENITH HIGH";
+  display:block;
+  margin-top:24px;
+  padding-top:17px;
+  border-top:1px solid #e8edf3;
+  color:#7b8796;
+  text-align:center;
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.04em;
+}
+
+@media(max-width:760px) {
+  body {
+    justify-content:center;
+    padding:22px 14px;
+    background-position:center;
+    background-attachment:scroll;
+  }
+
+  .login-container {
+    width:min(520px,100%);
+    padding:26px 20px 22px;
+    border-radius:20px;
+  }
+
+  .logo {
+    height:90px;
+    max-height:90px;
+    width:min(100%,330px);
+  }
+
+  .form {
+    grid-template-columns:1fr;
+    gap:11px;
+  }
+
+  .password-box,
+  .form>button,
+  #msg {
+    grid-column:1;
+  }
+
+  .form>input,
+  .password-box input {
+    height:50px;
+    font-size:16px;
+  }
+}
+
+@media(max-width:380px) {
+  .login-container {
+    padding:22px 16px 19px;
+  }
+
+  .logo {
+    height:78px;
+  }
+}
 </style>
 </head>
+
 <body>
+
 <main class="login-container">
-  <img src="IMG_4332.jpeg" class="logo" alt="DAMS Trivandrum Logo">
+
+  <img
+    src="IMG_4332.jpeg"
+    class="logo"
+    alt="DAMS Trivandrum Logo"
+  >
+
   <h2 class="inst-name">NEET PG / INICET</h2>
   <h3 class="title">MOCK TEST SERIES Login</h3>
+
   <div class="form">
-    <input type="text" id="fullName" placeholder="Full Name" autocomplete="name" aria-label="Full Name">
-    <input type="tel" id="phone" placeholder="Phone Number" autocomplete="tel" aria-label="Phone Number">
-    <input type="email" id="email" placeholder="Email" autocomplete="email" aria-label="Email">
-    <input type="text" id="cid" placeholder="Candidate ID" autocomplete="username" aria-label="Candidate ID">
+
+    <input
+      type="text"
+      id="fullName"
+      placeholder="Full Name"
+      autocomplete="name"
+      aria-label="Full Name"
+    >
+
+    <input
+      type="tel"
+      id="phone"
+      placeholder="Phone Number"
+      autocomplete="tel"
+      aria-label="Phone Number"
+    >
+
+    <input
+      type="email"
+      id="email"
+      placeholder="Email"
+      autocomplete="email"
+      aria-label="Email"
+    >
+
+    <input
+      type="text"
+      id="cid"
+      placeholder="Candidate ID"
+      autocomplete="username"
+      aria-label="Candidate ID"
+    >
+
     <div class="password-box">
-      <input type="password" id="pwd" placeholder="Password" autocomplete="current-password" aria-label="Password">
-      <button class="toggle" type="button" onclick="togglePassword()" aria-label="Show or hide password"><!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#071a32">
-<title>DAMS TRIVANDRUM NEET PG MOCK TEST SERIES - Login</title>
-<style>
-:root{--login-navy:#0a2342;--login-blue:#174a7c;--login-gold:#d9ad62}
-*{box-sizing:border-box}
-html,body{min-height:100%;margin:0}
-body{
-  min-height:100vh;min-height:100svh;display:flex;align-items:center;justify-content:flex-end;
-  padding:34px clamp(24px,6vw,100px);background-color:#10243d;
-  background-image:linear-gradient(90deg,rgba(5,18,35,.38) 0%,rgba(5,18,35,.22) 48%,rgba(5,18,35,.48) 100%),url("IMG_4116.jpeg");
-  background-position:center;background-size:cover;background-repeat:no-repeat;font-family:Arial,sans-serif;
-}
-.login-container{
-  width:min(570px,100%);margin:0;padding:34px clamp(25px,3.4vw,48px) 28px;
-  border:1px solid rgba(255,255,255,.82);border-radius:24px;background:rgba(255,255,255,.98);
-  box-shadow:0 24px 70px rgba(0,0,0,.32);text-align:center;
-}
-.login-container:before{
-  content:"CANDIDATE PORTAL";display:block;width:max-content;margin:0 auto 18px;padding:7px 11px;
-  border-left:3px solid var(--login-gold);border-radius:3px;background:#f2f5f9;color:var(--login-blue);
-  font-size:10px;font-weight:900;letter-spacing:.16em;
-}
-.logo{display:block;width:min(100%,390px);height:112px;max-height:112px;object-fit:contain;margin:0 auto 14px}
-.inst-name{margin:0;color:var(--login-navy);font-size:clamp(25px,3vw,34px);font-weight:900}
-.title{margin:9px 0 27px;color:#667085;font-size:15px;font-weight:600}
-.form{display:grid;grid-template-columns:1fr 1fr;gap:13px}
-.form>input,.password-box input{
-  width:100%;min-width:0;height:52px;padding:0 14px;border:1px solid #d5dce6;border-radius:11px;
-  background:#fff;color:#172235;font:inherit;font-size:14px;outline:none;transition:border-color .15s,box-shadow .15s;
-}
-.form>input:focus,.password-box input:focus{border-color:#1b5688;box-shadow:0 0 0 3px rgba(23,74,124,.12)}
-.password-box{position:relative;grid-column:1/-1}
-.password-box input{padding-right:52px}
-.toggle{
-  position:absolute;top:50%;right:11px;transform:translateY(-50%);width:36px;height:36px;
-  border:0;border-radius:8px;background:#f2f5f9;color:#52657c;cursor:pointer;font-size:18px;
-}
-.form>button{
-  grid-column:1/-1;width:100%;min-height:54px;margin-top:1px;border:0;border-radius:11px;
-  background:linear-gradient(100deg,#0b2b50,#1a5285);color:#fff;font-size:15px;font-weight:850;
-  letter-spacing:.04em;cursor:pointer;box-shadow:0 8px 18px rgba(11,43,80,.18);
-}
-.form>button:disabled{opacity:.55;cursor:wait}
-#msg{grid-column:1/-1;min-height:18px;margin:0;text-align:center;font-size:13px;overflow-wrap:anywhere}
-.login-container:after{
-  content:"Powered by ZENITH HIGH";display:block;margin-top:24px;padding-top:17px;border-top:1px solid #e8edf3;
-  color:#7b8796;text-align:center;font-size:10px;font-weight:700;letter-spacing:.04em;
-}
-@media(max-width:760px){
-  body{justify-content:center;padding:22px 14px;background-position:center;background-attachment:scroll}
-  .login-container{width:min(520px,100%);padding:26px 20px 22px;border-radius:20px}
-  .logo{height:90px;max-height:90px;width:min(100%,330px)}
-  .form{grid-template-columns:1fr;gap:11px}
-  .password-box,.form>button,#msg{grid-column:1}
-  .form>input,.password-box input{height:50px;font-size:16px}
-}
-@media(max-width:380px){.login-container{padding:22px 16px 19px}.logo{height:78px}}
-</style>
-</head>
-<body>
-<main class="login-container">
-  <img src="IMG_4332.jpeg" class="logo" alt="DAMS Trivandrum Logo">
-  <h2 class="inst-name">NEET PG / INICET</h2>
-  <h3 class="title">MOCK TEST SERIES Login</h3>
-  <div class="form">
-    <input type="text" id="fullName" placeholder="Full Name" autocomplete="name" aria-label="Full Name">
-    <input type="tel" id="phone" placeholder="Phone Number" autocomplete="tel" aria-label="Phone Number">
-    <input type="email" id="email" placeholder="Email" autocomplete="email" aria-label="Email">
-    <input type="text" id="cid" placeholder="Candidate ID" autocomplete="username" aria-label="Candidate ID">
-    <div class="password-box">
-      <input type="password" id="pwd" placeholder="Password" autocomplete="current-password" aria-label="Password">
-      <button class="toggle" type="button" onclick="togglePassword()" aria-label="Show or hide password">👁️</button>
+      <input
+        type="password"
+        id="pwd"
+        placeholder="Password"
+        autocomplete="current-password"
+        aria-label="Password"
+      >
+
+      <button
+        class="toggle"
+        type="button"
+        onclick="togglePassword()"
+        aria-label="Show or hide password"
+      >👁️</button>
     </div>
+
     <button type="button" onclick="login()">LOGIN</button>
+
     <p id="msg" role="status" aria-live="polite"></p>
+
   </div>
+
 </main>
+
 <script src="config.js?v=20261113_direct_approval_v2"></script>
 <script src="login.js?v=20261113_login_redesign_v1"></script>
-</body>
-</html>
-</button>
-    </div>
-    <button type="button" onclick="login()">LOGIN</button>
-    <p id="msg" role="status" aria-live="polite"></p>
-  </div>
-</main>
-<script src="config.js?v=20261113_direct_approval_v2"></script>
-<script src="login.js?v=20261113_login_redesign_v1"></script>
+
 </body>
 </html>
