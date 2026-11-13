@@ -27,14 +27,11 @@ const cand = safeParse(
   sessionStorage.getItem('neet_candidate') || ''
 );
 
-// Selected exam display settings are read from the authenticated exam selector.
-// Server-side ExamWindows remains authoritative for schedule, timer and scoring.
-if (cand && cand.examWindowId) {
-  const selectedStart = Date.parse(cand.examStartISO || '');
-  const selectedEnd = Date.parse(cand.examEndISO || '');
+if (cand?.selectedExam) {
+  const selectedStart = Date.parse(cand.selectedExam.startISO || '');
+  const selectedEnd = Date.parse(cand.selectedExam.endISO || '');
   if (Number.isFinite(selectedStart)) window.EXAM_START_MS = selectedStart;
   if (Number.isFinite(selectedEnd)) window.EXAM_END_MS = selectedEnd;
-  if (Number(cand.examDurationMin) > 0) window.EXAM_DURATION_MIN = Number(cand.examDurationMin);
 }
 
 const activeCandidateId = String(
@@ -46,12 +43,10 @@ function candidateWindowStorageKey(prefix, candidateId) {
     String(candidateId || '').trim()
   );
 
-  const windowKey = String(cand?.examWindowId || (
-    (Number.isFinite(window.EXAM_START_MS) ? window.EXAM_START_MS : 0) + '_' +
-    (Number.isFinite(window.EXAM_END_MS) ? window.EXAM_END_MS : 0)
-  ));
-
-  return `${prefix}_${cid}_${encodeURIComponent(windowKey)}`;
+  const windowId = String(cand?.examWindowId || '');
+  const startMs = Number.isFinite(window.EXAM_START_MS) ? window.EXAM_START_MS : 0;
+  const endMs = Number.isFinite(window.EXAM_END_MS) ? window.EXAM_END_MS : 0;
+  return `${prefix}_${cid}_${encodeURIComponent(windowId || (startMs + '_' + endMs))}`;
 }
 
 const SUBMITTED_KEY = candidateWindowStorageKey(
@@ -70,8 +65,8 @@ if (!cand || !cand.token || !activeCandidateId) {
 }
 
 if (!cand.accessToken || !cand.deviceSessionId) {
-  location.replace('qr-wait.html?renew=1');
-  throw new Error('Centre authorization missing; redirecting to QR authorization.');
+  location.replace('exam-selector.html?reauthorize=1');
+  throw new Error('Admin approval missing for the selected exam; redirecting to Exam Selector.');
 }
 
 if (localStorage.getItem(SUBMITTED_KEY) === 'yes') {
@@ -197,12 +192,10 @@ function buildStateKey() {
     cand?.candidateId || cand?.id || 'guest'
   );
 
-  const windowKey = String(cand?.examWindowId || (
-    (Number.isFinite(window.EXAM_START_MS) ? window.EXAM_START_MS : 0) + '_' +
-    (Number.isFinite(window.EXAM_END_MS) ? window.EXAM_END_MS : 0)
-  ));
-
-  return `neet_exam_state_${cid}_${encodeURIComponent(windowKey)}`;
+  const windowId = String(cand?.examWindowId || '');
+  const startMs = Number.isFinite(window.EXAM_START_MS) ? window.EXAM_START_MS : 0;
+  const endMs = Number.isFinite(window.EXAM_END_MS) ? window.EXAM_END_MS : 0;
+  return `neet_exam_state_${cid}_${encodeURIComponent(windowId || (startMs + '_' + endMs))}`;
 }
 
 const KEY = buildStateKey();
@@ -240,13 +233,11 @@ function pad2(n) {
 }
 
 async function postAPI(payload, options = {}) {
-  payload = Object.assign({
-    examWindowId: cand.examWindowId || ''
-  }, payload || {});
-  if (['startExam','submit','violation','examHeartbeat','checkExamAccess'].includes(payload.action)) {
+  if (['startExam','submit','violation','examHeartbeat'].includes(payload.action)) {
     payload = Object.assign({}, payload, {
       accessToken: cand.accessToken || '',
-      deviceSessionId: cand.deviceSessionId || ''
+      deviceSessionId: cand.deviceSessionId || '',
+      examWindowId: cand.examWindowId || ''
     });
   }
 
@@ -1003,6 +994,7 @@ async function submitExam(
       unattempted: data.unattempted,
       totalQuestions: data.totalQuestions,
       timeTakenSec: data.timeTakenSec,
+      examWindowId: data.examWindowId || cand.examWindowId || '',
 
       violations: (
         data.violations !== undefined
@@ -1077,15 +1069,15 @@ function startCentreHeartbeat() {
     if (!attemptReady || centreHeartbeatBusy || submitted) return;
     centreHeartbeatBusy = true;
     try {
-      await postAPI({action:'examHeartbeat',token:cand.token,candidateId:activeCandidateId},{timeoutMs:15000});
+      await postAPI({action:'examHeartbeat',token:cand.token,candidateId:activeCandidateId,examWindowId:cand.examWindowId},{timeoutMs:15000});
     } catch (err) {
       if (centreHeartbeatTimer) clearInterval(centreHeartbeatTimer);
       centreHeartbeatTimer = null;
       [submitBtn,prevBtn,nextBtn,clearBtn,markBtn].forEach(b=>{if(b)b.disabled=true;});
       if (qTitle) qTitle.textContent = 'Centre authorization interrupted';
-      if (qText) qText.textContent = 'Your authorization is no longer active. Your locally saved answers have been retained in this browser. Contact the invigilator and generate a new QR authorization before continuing.';
-      alert('Centre authorization expired or was revoked. You will be returned to QR authorization.');
-      location.replace('qr-wait.html?renew=1');
+      if (qText) qText.textContent = 'Exam access is no longer active. Your locally saved answers have been retained in this browser. Return to Exam Selector and request administrator approval again.';
+      alert('Exam access expired or was revoked. You will return to Exam Selector for fresh admin approval.');
+      location.replace('exam-selector.html?reauthorize=1');
     } finally { centreHeartbeatBusy = false; }
   }, 45000);
 }
@@ -1104,7 +1096,8 @@ async function init() {
     const data = await postAPI({
       action: 'startExam',
       token: cand.token,
-      candidateId: cand.candidateId || cand.id || ''
+      candidateId: cand.candidateId || cand.id || '',
+      examWindowId: cand.examWindowId || ''
     }, {
       timeoutMs: 45000
     });
