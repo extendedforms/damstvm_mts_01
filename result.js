@@ -312,6 +312,28 @@
     setText('metadataNote', note);
   }
 
+  function clearAnswerKey(message) {
+    var link=byId('answerKeyLink');
+    if(link){link.hidden=true;link.removeAttribute('href');}
+    var status=byId('answerKeyStatus');
+    if(status)status.textContent=message||'Select a submitted result to check Answer Key access.';
+  }
+
+  async function loadAnswerKeyLink(windowId) {
+    clearAnswerKey('Checking Answer Key release and Drive permission…');
+    if(!windowId){clearAnswerKey('No verified exam window is available for this result.');return;}
+    try {
+      var data=await api('getReleasedAnswerKeyLink',{examWindowId:windowId});
+      if(!data.driveUrl)throw new Error('The server did not return an Answer Key link.');
+      var link=byId('answerKeyLink');
+      if(link){link.href=data.driveUrl;link.hidden=false;link.textContent='Open '+(data.fileName||'Answer Key')+' in Google Drive';}
+      var status=byId('answerKeyStatus');
+      if(status)status.textContent='Answer Key released for this submitted examination. Open it using the Google account registered with your candidate profile ('+(data.email||'registered email')+').';
+    } catch(error) {
+      clearAnswerKey(error.message||'Answer Key is not currently available.');
+    }
+  }
+
   function clearAnalysis(message) {
     var content = byId('analysisContent');
     var status = byId('analysisStatus');
@@ -364,6 +386,7 @@
       renderResult(result);
       setStatus('statusNote', 'Selected examination result loaded successfully.', false);
       await loadAnalysis(item.examWindowId, item.examName || item.submittedAt);
+      await loadAnswerKeyLink(item.examWindowId);
     } catch (error) {
       setStatus('statusNote', error.message || 'Unable to load selected result.', true);
       clearAnalysis(error.message || 'Unable to load analysis.');
@@ -385,10 +408,11 @@
       if (c.examWindowId) payload.examWindowId = c.examWindowId;
       var result = await api('getResult', payload);
       renderResult(result);
-      if (result.examWindowId) state.selectedWindowId = result.examWindowId;
+      if (result.examWindowId) { state.selectedWindowId = result.examWindowId; await loadAnswerKeyLink(result.examWindowId); }
       setStatus('statusNote', 'Exam result loaded successfully.', false);
     } catch (error) {
       if (!stored || firstValue(stored.score, stored.marks, stored.totalScore) === null) {
+        clearAnswerKey('No submitted result is selected.');
         renderResult({});
         setStatus('statusNote', error.message || 'No result found for the current exam window.', true);
       } else {
@@ -423,6 +447,7 @@
     }
     sessionStorage.removeItem('neet_candidate');
     sessionStorage.removeItem('neet_qr_challenge');
+    sessionStorage.removeItem('neet_exam_approval_request');
     location.replace('login.html?v=' + Date.now());
   };
 
