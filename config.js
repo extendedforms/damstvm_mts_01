@@ -5,7 +5,7 @@
 // ==============================
 
 // Google Apps Script Web App URL
-window.API_URL = "https://script.google.com/macros/s/AKfycbwliFfaa6AfML6OWmPx4h7QU9hQfjc5nHZX87jLTA-sZBaTFKhIZihI0dL89stfK3qY/exec";
+window.API_URL = "https://script.google.com/macros/s/AKfycbztFZAnAoNHgnPlf2o0Da8baWYsYO_f8UlcfQSpDDL2pYI0WDvnGFGwIvTjhU1HUVqs/exec";
 window.SCRIPT_URL = window.API_URL;
 
 // ==============================
