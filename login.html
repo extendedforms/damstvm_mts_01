@@ -19,6 +19,10 @@
   box-sizing: border-box;
 }
 
+html {
+  min-height: 100%;
+}
+
 body {
   min-height: 100vh;
   min-height: 100svh;
@@ -31,14 +35,21 @@ body {
 
   position: relative;
 
-  background:
+  background-color: #10243d;
+
+  background-image:
     linear-gradient(
       115deg,
       rgba(5,18,35,.48),
       rgba(7,25,47,.25),
       rgba(6,18,34,.40)
     ),
-    url("IMG_4057.jpeg") center center / cover no-repeat fixed;
+    url("IMG_4116.jpeg");
+
+  background-position: center center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
 
   font-family: Arial, sans-serif;
 }
@@ -67,6 +78,7 @@ body {
   text-align: left;
 
   pointer-events: none;
+  user-select: none;
 }
 
 /* LOGIN CARD */
@@ -90,8 +102,11 @@ body {
   text-align: left;
 }
 
+/* LOGO */
+
 .logo {
   display: block;
+
   width: min(100%, 310px);
   height: auto;
   max-height: 86px;
@@ -101,6 +116,8 @@ body {
 
   margin: 0 auto 20px;
 }
+
+/* CANDIDATE PORTAL LABEL */
 
 .login-container:before {
   content: "CANDIDATE PORTAL";
@@ -122,14 +139,19 @@ body {
   letter-spacing: .16em;
 }
 
+/* INSTITUTE NAME */
+
 .inst-name {
   margin: 0;
+
   color: var(--login-navy);
 
   font-size: clamp(23px, 3vw, 30px);
   font-weight: 900;
   text-align: center;
 }
+
+/* LOGIN SUBTITLE */
 
 .title {
   margin: 10px 0 25px;
@@ -138,6 +160,8 @@ body {
   font-size: 14px;
   text-align: center;
 }
+
+/* LOGIN FORM */
 
 .form {
   display: grid;
@@ -162,6 +186,15 @@ body {
   font: inherit;
   font-size: 14px;
 }
+
+.form > input:focus,
+.password-box input:focus {
+  outline: none;
+  border-color: var(--login-blue);
+  box-shadow: 0 0 0 3px rgba(23,74,124,.12);
+}
+
+/* PASSWORD FIELD */
 
 .password-box {
   position: relative;
@@ -188,6 +221,8 @@ body {
   cursor: pointer;
 }
 
+/* LOGIN BUTTON */
+
 .form > button {
   grid-column: 1/-1;
 
@@ -205,12 +240,19 @@ body {
   font-weight: 850;
 
   cursor: pointer;
+  transition: opacity .2s, transform .2s;
+}
+
+.form > button:hover {
+  transform: translateY(-1px);
 }
 
 .form > button:disabled {
   opacity: .55;
   cursor: wait;
 }
+
+/* STATUS MESSAGE */
 
 #msg {
   grid-column: 1/-1;
@@ -223,10 +265,13 @@ body {
   overflow-wrap: anywhere;
 }
 
+/* FOOTER */
+
 .login-container:after {
   content: "Powered by ZENITH HIGH";
 
   display: block;
+
   margin-top: 22px;
   padding-top: 18px;
 
@@ -239,16 +284,16 @@ body {
   font-weight: 700;
 }
 
-/* TABLETS AND MOBILE */
+/* TABLETS */
 
-@media(max-width: 900px) {
+@media (max-width: 900px) {
 
   body {
     justify-content: center;
     padding: 25px 18px;
 
     background-attachment: scroll;
-    background-position: center;
+    background-position: center center;
   }
 
   .hero-title {
@@ -261,10 +306,14 @@ body {
   }
 }
 
-@media(max-width: 600px) {
+/* MOBILE PHONES */
+
+@media (max-width: 600px) {
 
   body {
     padding: 18px 13px;
+
+    background-position: center center;
   }
 
   .login-container {
@@ -315,7 +364,9 @@ body {
     alt="DAMS Trivandrum Logo"
   >
 
-  <h2 class="inst-name">DAMS TRIVANDRUM</h2>
+  <h2 class="inst-name">
+    DAMS TRIVANDRUM
+  </h2>
 
   <h3 class="title">
     NEET PG MOCK TEST SERIES Login
@@ -374,15 +425,24 @@ body {
 
     </div>
 
-    <button type="button" onclick="login()">
+    <button
+      type="button"
+      onclick="login()"
+    >
       LOGIN
     </button>
 
-    <p id="msg" role="status" aria-live="polite"></p>
+    <p
+      id="msg"
+      role="status"
+      aria-live="polite"
+    ></p>
 
   </div>
 
 </main>
+
+<!-- EXISTING CONFIGURATION AND LOGIN SCRIPT -->
 
 <script src="config.js?v=20261112_qr_a"></script>
 <script src="login.js?v=20261112_qr_a"></script>
