@@ -11,9 +11,12 @@ let adminToken=localStorage.getItem('centre_admin_token')||'';
 let answerCandidates=[];
 let pendingRefreshTimer=null;
 let pendingRefreshBusy=false;
+let examCloseTimer=null;
 let dashboardActive=false;
+let rankRows=[];
 
 async function api(action,extra={}){
+  if(!window.API_URL)throw new Error('API_URL is missing from config.js.');
   const r=await fetch(window.API_URL,{
     method:'POST',
     headers:{'Content-Type':'text/plain;charset=utf-8'},
@@ -46,6 +49,7 @@ function showDashboard(){
   dashboardActive=true;
 
   startPendingAutoRefresh();
+  startExamCloseWatcher();
 
   // Load the remaining dashboard sections independently.
   refreshAll();
@@ -71,8 +75,33 @@ function startPendingAutoRefresh(){
   refreshPending().catch(e=>message('actionMsg',e.message,true));
 }
 
+// Watch the already-loaded exam schedule locally. When an official end time
+// passes, refresh the closed-window list and prepare the new overall rank list.
+// This avoids constant server polling while still updating shortly after exam end.
+function stopExamCloseWatcher(){
+  if(examCloseTimer)clearInterval(examCloseTimer);
+  examCloseTimer=null;
+}
+
+function startExamCloseWatcher(){
+  stopExamCloseWatcher();
+  examCloseTimer=setInterval(()=>{
+    if(!dashboardActive||document.visibilityState!=='visible')return;
+    const newlyClosed=Array.from($('rankExamSelect').options).filter(option=>{
+      const endMs=Date.parse(option.dataset.endISO||'');
+      return option.disabled&&Number.isFinite(endMs)&&endMs>0&&endMs<=Date.now();
+    }).sort((a,b)=>Date.parse(a.dataset.endISO)-Date.parse(b.dataset.endISO));
+    if(!newlyClosed.length)return;
+    // Preserve the newly closed exam as the selected rank-list target.
+    $('rankExamSelect').value=newlyClosed[newlyClosed.length-1].value;
+    refreshAnswerKeyExams().catch(e=>message('rankInfo',e.message,true));
+  },15000);
+}
+
 async function login(){
   $('loginBtn').disabled=true;
+  $('loginBtn').setAttribute('aria-busy','true');
+  $('loginBtn').textContent='Signing in…';
   try{
     const d=await api('adminLogin',{
       username:$('adminUser').value.trim(),
@@ -86,6 +115,8 @@ async function login(){
     message('loginMsg',e.message,true);
   }finally{
     $('loginBtn').disabled=false;
+    $('loginBtn').removeAttribute('aria-busy');
+    $('loginBtn').textContent='Sign in';
   }
 }
 
@@ -128,6 +159,8 @@ async function refreshPending(){
 
         approveBtn.disabled=true;
         rejectBtn.disabled=true;
+        approveBtn.textContent='Approving…';
+        approveBtn.setAttribute('aria-busy','true');
 
         try{
           await api('adminApproveExamRequest',{
@@ -143,6 +176,10 @@ async function refreshPending(){
           message('actionMsg',e.message,true);
           approveBtn.disabled=false;
           rejectBtn.disabled=false;
+          rejectBtn.textContent='Reject';
+          rejectBtn.removeAttribute('aria-busy');
+          approveBtn.textContent='Approve';
+          approveBtn.removeAttribute('aria-busy');
         }
       });
 
@@ -151,6 +188,8 @@ async function refreshPending(){
 
         approveBtn.disabled=true;
         rejectBtn.disabled=true;
+        rejectBtn.textContent='Rejecting…';
+        rejectBtn.setAttribute('aria-busy','true');
 
         try{
           await api('adminRejectExamRequest',{
@@ -166,6 +205,8 @@ async function refreshPending(){
           message('actionMsg',e.message,true);
           approveBtn.disabled=false;
           rejectBtn.disabled=false;
+          rejectBtn.textContent='Reject';
+          rejectBtn.removeAttribute('aria-busy');
         }
       });
 
@@ -214,6 +255,7 @@ async function refreshSessions(){
 
     b.addEventListener('click',async()=>{
       if(!confirm('Revoke centre authorization for '+x.candidateId+'?'))return;
+      b.disabled=true;b.textContent='Revoking…';b.setAttribute('aria-busy','true');
       try{
         await api('adminRevokeAccess',{
           adminToken,
@@ -224,6 +266,7 @@ async function refreshSessions(){
         message('actionMsg','Authorization revoked.');
       }catch(e){
         message('actionMsg',e.message,true);
+        b.disabled=false;b.textContent='Revoke';b.removeAttribute('aria-busy');
       }
     });
 
@@ -265,14 +308,109 @@ async function refreshAudit(){
 
 async function refreshAll(){
   try{
-    await Promise.all([
-      refreshPending(),
-      refreshSessions(),
-      refreshAudit(),
-      refreshAnswerKeyExams()
-    ]);
+    // Pending requests refresh independently on their short polling cycle.
+    await Promise.all([refreshSessions(),refreshAudit(),refreshAnswerKeyExams()]);
   }catch(e){
     message('actionMsg',e.message,true);
+  }
+}
+
+function formatRankTime(seconds){
+  const n=Number(seconds);
+  if(!Number.isFinite(n)||n<0)return '-';
+  const h=Math.floor(n/3600),m=Math.floor((n%3600)/60),s=Math.floor(n%60);
+  return h ? h+'h '+m+'m '+s+'s' : (m ? m+'m '+s+'s' : s+'s');
+}
+
+function formatRankDate(value){
+  if(!value)return '-';
+  const d=new Date(value);
+  return Number.isNaN(d.getTime())?String(value):d.toLocaleString('en-IN',{timeZone:'Asia/Kolkata'});
+}
+
+function signedNumber(value, suffix=''){
+  if(value===null||value===undefined||!Number.isFinite(Number(value)))return '—';
+  const n=Number(value);
+  return (n>0?'+':'')+n+suffix;
+}
+
+function renderRankRows(){
+  const body=$('rankBody');
+  body.innerHTML='';
+  const query=String($('rankSearchInput').value||'').trim().toLowerCase();
+  const rows=rankRows.filter(x=>!query||String(x.candidateId||'').toLowerCase().includes(query)||String(x.name||'').toLowerCase().includes(query));
+  if(!rows.length){
+    const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=14;
+    td.textContent=rankRows.length?'No candidate matches this search.':'No submitted results are available for this exam.';
+    tr.appendChild(td);body.appendChild(tr);return;
+  }
+  rows.forEach(x=>{
+    const tr=document.createElement('tr');
+    const rank=document.createElement('td');rank.textContent=x.rank;rank.className='rank-highlight';tr.appendChild(rank);
+    const candidate=document.createElement('td');candidate.textContent=(x.name||'Candidate')+' ('+x.candidateId+')';tr.appendChild(candidate);
+    const values=[
+      String(x.score),String(x.correct),String(x.wrong),String(x.unattempted),
+      Number(x.accuracy||0).toFixed(1)+'%',formatRankTime(x.timeTakenSec),
+      x.previousScore===null||x.previousScore===undefined?'—':String(x.previousScore),
+      signedNumber(x.scoreChange),
+      x.scoreChangePercent===null||x.scoreChangePercent===undefined?'—':signedNumber(x.scoreChangePercent,'%'),
+      x.previousRank===null||x.previousRank===undefined?'—':String(x.previousRank),
+      signedNumber(x.rankChange),formatRankDate(x.submittedAtISO)
+    ];
+    values.forEach((value,index)=>{
+      const td=document.createElement('td');td.textContent=value;
+      if(index===7&&x.scoreChange!==null&&x.scoreChange!==undefined)td.className='rank-change '+(x.scoreChange>0?'up':x.scoreChange<0?'down':'same');
+      if(index===9&&x.scoreChangePercent!==null&&x.scoreChangePercent!==undefined)td.className='rank-change '+(x.scoreChangePercent>0?'up':x.scoreChangePercent<0?'down':'same');
+      if(index===11&&x.rankChange!==null&&x.rankChange!==undefined)td.className='rank-change '+(x.rankChange>0?'up':x.rankChange<0?'down':'same');
+      tr.appendChild(td);
+    });
+    body.appendChild(tr);
+  });
+}
+
+function downloadRankCsv(){
+  if(!rankRows.length){message('rankInfo','There is no rank list to export.',true);return;}
+  const headers=['Rank','Candidate ID','Candidate Name','Score','Correct','Wrong','Unattempted','Accuracy %','Time Taken (sec)','Previous Exam Score','Score Change','Score Change %','Previous Rank','Rank Change','Submitted At'];
+  const values=rankRows.map(x=>[
+    x.rank,x.candidateId,x.name,x.score,x.correct,x.wrong,x.unattempted,x.accuracy,
+    x.timeTakenSec,x.previousScore,x.scoreChange,x.scoreChangePercent,x.previousRank,x.rankChange,x.submittedAtISO
+  ]);
+  const quote=value=>'"'+String(value===null||value===undefined?'':value).replace(/"/g,'""')+'"';
+  const csv='\uFEFF'+[headers,...values].map(row=>row.map(quote).join(',')).join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const anchor=document.createElement('a');
+  const exam=String($('rankExamSelect').selectedOptions[0]?.textContent||'Exam').replace(/[^A-Za-z0-9_-]+/g,'_');
+  anchor.href=url;anchor.download='DAMS_CBT_Rank_'+exam+'.csv';
+  document.body.appendChild(anchor);anchor.click();anchor.remove();
+  window.setTimeout(()=>URL.revokeObjectURL(url),1000);
+  message('rankInfo','CSV exported with all '+rankRows.length+' ranked candidates.');
+}
+
+async function refreshExamRankList(){
+  const examWindowId=$('rankExamSelect').value||'';
+  rankRows=[];$('rankBody').innerHTML='';
+  $('downloadRankCsvBtn').disabled=true;
+  if(!examWindowId){message('rankInfo','Select a closed exam window to prepare its overall rank list.',true);renderRankRows();return;}
+  const button=$('rankRefreshBtn');const old=button.textContent;
+  button.disabled=true;button.textContent='Preparing…';button.setAttribute('aria-busy','true');
+  message('rankInfo','Preparing the overall rank list from submitted results…');
+  try{
+    const d=await api('adminGetExamRankList',{adminToken,examWindowId});
+    rankRows=d.rankings||[];
+    $('downloadRankCsvBtn').disabled=!rankRows.length;
+    let info='Exam: '+d.examName+'\nSubmitted candidates ranked: '+d.totalSubmitted;
+    if(d.previousExamName)info+='\nProgress comparison: '+d.previousExamName+' → '+d.examName+'. Candidates without a submission in the previous exam show “—”.';
+    else info+='\nNo earlier configured exam window is available for comparison.';
+    info+='\nTie-break: '+d.tieBreakRule+'\nPositive score/rank change = improvement; negative = decline.';
+    message('rankInfo',info);
+    renderRankRows();
+  }catch(e){
+    $('downloadRankCsvBtn').disabled=true;
+    message('rankInfo',e.message,true);
+    const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=14;td.textContent='Rank list is not available.';tr.appendChild(td);$('rankBody').appendChild(tr);
+  }finally{
+    button.disabled=false;button.textContent=old;button.removeAttribute('aria-busy');
   }
 }
 
@@ -280,11 +418,13 @@ async function refreshAll(){
 
 async function refreshAnswerKeyExams(keepSelection=true){
   const previous=currentExamWindowId();
+  const previousRank=$('rankExamSelect').value||'';
   const d=await api('adminGetAnswerKeyExams',{adminToken});
+  const exams=d.exams||[];
   const sel=$('answerExamSelect');
   sel.innerHTML='';
 
-  (d.exams||[]).forEach(x=>{
+  exams.forEach(x=>{
     const o=document.createElement('option');
     o.value=x.examWindowId;
     o.textContent=x.examName+' — '+(x.closed?'Closed':'Not closed')+' — '+x.eligibleCount+' eligible';
@@ -292,12 +432,33 @@ async function refreshAnswerKeyExams(keepSelection=true){
     o.dataset.fileName=x.fileName||'';
     sel.appendChild(o);
   });
+  if(keepSelection&&previous&&Array.from(sel.options).some(o=>o.value===previous))sel.value=previous;
 
-  if(keepSelection&&previous&&Array.from(sel.options).some(o=>o.value===previous)){
-    sel.value=previous;
+  const rankSel=$('rankExamSelect');
+  rankSel.innerHTML='';
+  exams.forEach(x=>{
+    const o=document.createElement('option');
+    o.value=x.examWindowId;
+    o.textContent=x.examName+' — '+(x.closed?'Closed':'Available after exam end');
+    o.dataset.endISO=x.endISO||'';
+    o.disabled=!x.closed;
+    rankSel.appendChild(o);
+  });
+  if(previousRank&&Array.from(rankSel.options).some(o=>o.value===previousRank&&!o.disabled))rankSel.value=previousRank;
+  else {
+    const closed=exams.filter(x=>x.closed).sort((a,b)=>Date.parse(a.endISO||0)-Date.parse(b.endISO||0));
+    if(closed.length)rankSel.value=closed[closed.length-1].examWindowId;
+    else rankSel.value='';
   }
-
-  await refreshAnswerKeyCandidates();
+  if(!exams.length){
+    const a=document.createElement('option');a.value='';a.textContent='No exam windows configured';sel.appendChild(a);
+    const r=document.createElement('option');r.value='';r.textContent='No exam windows configured';rankSel.appendChild(r);
+  }
+  await Promise.all([refreshAnswerKeyCandidates(),rankSel.value?refreshExamRankList():Promise.resolve()]);
+  if(!rankSel.value){
+    rankRows=[];$('downloadRankCsvBtn').disabled=true;renderRankRows();
+    message('rankInfo','No exam has closed yet. The overall rank list will appear after the official end time.');
+  }
 }
 
 async function refreshAnswerKeyCandidates(){
@@ -374,7 +535,7 @@ async function refreshAnswerKeyCandidates(){
         const b=document.createElement('button');
         b.className='danger';
         b.textContent='Revoke';
-        b.addEventListener('click',()=>revokeAnswerKey(c.candidateId));
+        b.addEventListener('click',async()=>{b.disabled=true;b.textContent='Revoking…';b.setAttribute('aria-busy','true');await revokeAnswerKey(c.candidateId);if(b.isConnected){b.disabled=false;b.textContent='Revoke';b.removeAttribute('aria-busy');}});
         actionTd.appendChild(b);
       }else if(c.grantStatus==='EXTERNAL'){
         actionTd.textContent='Manage in Drive';
@@ -382,7 +543,7 @@ async function refreshAnswerKeyCandidates(){
         const b=document.createElement('button');
         b.textContent='Grant';
         b.disabled=!d.closed||!d.fileConfigured||c.grantStatus==='OLD_FILE';
-        b.addEventListener('click',()=>grantAnswerKey(c.candidateId));
+        b.addEventListener('click',async()=>{b.disabled=true;b.textContent='Granting…';b.setAttribute('aria-busy','true');await grantAnswerKey(c.candidateId);if(b.isConnected){b.disabled=false;b.textContent='Grant';b.removeAttribute('aria-busy');}});
         actionTd.appendChild(b);
       }
 
@@ -423,6 +584,8 @@ async function saveAnswerKeyFile(){
   }
 
   $('saveAnswerKeyFileBtn').disabled=true;
+  $('saveAnswerKeyFileBtn').setAttribute('aria-busy','true');
+  $('saveAnswerKeyFileBtn').textContent='Saving PDF…';
 
   try{
     const d=await api('adminSetAnswerKeyFile',{
@@ -436,6 +599,8 @@ async function saveAnswerKeyFile(){
     message('answerKeyActionMsg',e.message,true);
   }finally{
     $('saveAnswerKeyFileBtn').disabled=false;
+    $('saveAnswerKeyFileBtn').removeAttribute('aria-busy');
+    $('saveAnswerKeyFileBtn').textContent='Save PDF for this exam';
   }
 }
 
@@ -476,6 +641,8 @@ async function grantSelectedAnswerKeys(){
   ))return;
 
   $('bulkGrantAnswerKeyBtn').disabled=true;
+  $('bulkGrantAnswerKeyBtn').setAttribute('aria-busy','true');
+  $('bulkGrantAnswerKeyBtn').textContent='Granting…';
   let total={granted:0,alreadyGranted:0,failed:0};
 
   try{
@@ -512,6 +679,8 @@ async function grantSelectedAnswerKeys(){
     message('answerKeyActionMsg','Bulk grant stopped: '+e.message,true);
   }finally{
     $('bulkGrantAnswerKeyBtn').disabled=false;
+    $('bulkGrantAnswerKeyBtn').removeAttribute('aria-busy');
+    $('bulkGrantAnswerKeyBtn').textContent='Grant selected (bulk)';
   }
 }
 
@@ -538,9 +707,16 @@ async function revokeAnswerKey(candidateId){
 // ---------------- Event listeners ----------------
 
 $('loginBtn').addEventListener('click',login);
-$('refreshBtn').addEventListener('click',refreshAll);
+$('refreshBtn').addEventListener('click',async()=>{
+  const b=$('refreshBtn');b.disabled=true;b.setAttribute('aria-busy','true');b.textContent='Refreshing…';
+  try{await Promise.all([refreshAll(),refreshPending()]);}finally{b.disabled=false;b.removeAttribute('aria-busy');b.textContent='Refresh dashboard';}
+});
 
 $('answerExamSelect').addEventListener('change',refreshAnswerKeyCandidates);
+$('rankExamSelect').addEventListener('change',refreshExamRankList);
+$('rankRefreshBtn').addEventListener('click',refreshExamRankList);
+$('downloadRankCsvBtn').addEventListener('click',downloadRankCsv);
+$('rankSearchInput').addEventListener('input',renderRankRows);
 $('refreshAnswerKeyBtn').addEventListener('click',refreshAnswerKeyCandidates);
 $('saveAnswerKeyFileBtn').addEventListener('click',saveAnswerKeyFile);
 $('bulkGrantAnswerKeyBtn').addEventListener('click',grantSelectedAnswerKeys);
@@ -553,9 +729,21 @@ $('selectAllAnswerCandidates').addEventListener('change',e=>{
 $('logoutAdmin').addEventListener('click',()=>{
   dashboardActive=false;
   stopPendingAutoRefresh();
+  stopExamCloseWatcher();
   localStorage.removeItem('centre_admin_token');
   location.reload();
 });
+
+// Every button receives a visible press animation, including dynamically
+// generated Approve / Reject / Grant / Revoke controls.
+document.addEventListener('click',e=>{
+  const button=e.target&&e.target.closest?e.target.closest('button'):null;
+  if(!button||button.disabled)return;
+  button.classList.remove('feedback');
+  void button.offsetWidth;
+  button.classList.add('feedback');
+  window.setTimeout(()=>button.classList.remove('feedback'),220);
+},true);
 
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible'&&dashboardActive){
@@ -563,7 +751,7 @@ document.addEventListener('visibilitychange',()=>{
   }
 });
 
-window.addEventListener('pagehide',stopPendingAutoRefresh);
+window.addEventListener('pagehide',()=>{stopPendingAutoRefresh();stopExamCloseWatcher();});
 
 // Restore an existing admin session, if the server accepts its token.
 if(adminToken){
