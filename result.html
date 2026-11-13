@@ -143,6 +143,17 @@
     .result-btn.secondary { color: #173f6c; background: #eaf0f6; }
     .result-btn.danger { color: #fff; background: #a12d3d; }
     .result-btn:disabled { opacity: .55; cursor: not-allowed; }
+    .result-btn { transition: transform .12s ease, box-shadow .12s ease, filter .12s ease; }
+    .result-btn:active:not(:disabled), .result-btn.feedback:not(:disabled) {
+      transform: translateY(1px) scale(.98);
+      box-shadow: inset 0 2px 5px rgba(0,0,0,.18), 0 0 0 3px rgba(77,139,196,.22);
+      filter: brightness(1.04);
+    }
+    .history-select:active:not(:disabled), .history-select.feedback:not(:disabled) {
+      transform: translateY(1px) scale(.98);
+      box-shadow: inset 0 2px 5px rgba(0,0,0,.18), 0 0 0 3px rgba(77,139,196,.22);
+    }
+    .history-select:disabled { opacity:.55; cursor:progress; }
 
     .result-note {
       min-height: 18px;
@@ -162,7 +173,7 @@
 
     .history-item {
       display: grid;
-      grid-template-columns: 1.5fr repeat(3, minmax(70px, .7fr)) auto;
+      grid-template-columns: 1.5fr repeat(4, minmax(70px, .7fr)) auto;
       align-items: center;
       gap: 10px;
       padding: 12px;
@@ -196,6 +207,9 @@
       font-size: 17px;
     }
 
+    .history-metric.progress-up strong { color:#177245; }
+    .history-metric.progress-down strong { color:#a12d3d; }
+    .history-metric { min-width:0; overflow-wrap:anywhere; }
     .history-select {
       border: 0;
       border-radius: 9px;
@@ -414,6 +428,6 @@
   </main>
 
   <script src="config.js?v=20261113_direct_approval_v2"></script>
-  <script src="result.js?v=20261113_direct_approval_v2"></script>
+  <script src="result.js?v=20261114_progress_v1"></script>
 </body>
 </html>
