@@ -53,7 +53,7 @@ async function login(){
     sessionStorage.removeItem('neet_qr_challenge');
     sessionStorage.removeItem('neet_exam_approval_request');
     setMsg('Login successful. Choose the examination you want to attend.',true);
-    location.replace('exam-selector.html?v=20261114_button_feedback_v1');
+    location.replace('exam-selector.html?v=20261114_fast_ui_v1');
   }catch(error){
     setMsg(error&&error.message?error.message:'Login failed. Please try again.');
     loginInProgress=false;setLoginBusy(false);
