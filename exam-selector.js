@@ -7,7 +7,7 @@
   let exams=[];let selected=null;let requestId='';let pollTimer=null;let busy=false;
   let pollStartedAt=0;let pollCount=0;
   const cacheKey='neet_exam_approval_request';
-  const INSTRUCTIONS_URL='instructions.html?v=20261113_fast_approval_v3';
+  const INSTRUCTIONS_URL='instructions.html?v=20261114_fast_ui_v1';
   const DEFAULT_REQUEST_TEXT='Request Admin Approval';
   function say(id,text,error=false){const el=$(id);if(!el)return;el.textContent=text;el.classList.toggle('error',!!error);}
   function persist(){sessionStorage.setItem('neet_candidate',JSON.stringify(candidate));}
