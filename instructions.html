@@ -1,6 +1,83 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#071a32"><title>Exam Instructions - DAMS CBT</title><style>
 *{box-sizing:border-box}body{margin:0;background:#eef3f9;color:#172033;font-family:Arial,sans-serif}.topbar{padding:18px 22px;background:#003b66;color:#fff;font-weight:800}.card{max-width:900px;margin:28px auto;background:#fff;padding:30px;border-radius:14px;box-shadow:0 4px 18px #0001}h2{margin-top:0;font-size:28px}.candidate{padding:14px;background:#f4f7fb;border-radius:10px;line-height:1.6}.meta{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 20px}.pill{padding:10px 12px;background:#eef2f7;border-radius:8px;font-size:13px}ul{font-size:16px;line-height:1.8;padding-left:25px}.btn{padding:13px 22px;border:0;border-radius:9px;background:#003b66;color:#fff;font-size:16px;font-weight:800;cursor:pointer}.btn:disabled{opacity:.45;cursor:not-allowed}.notice{font-weight:700;margin:12px 0;padding:12px;border-radius:8px;background:#eef3f9;line-height:1.5}.notice.error{background:#fff0f0;color:#a11}@media(max-width:700px){.card{margin:16px 12px;padding:22px 18px}h2{font-size:24px}ul{font-size:15px}}
-</style></head><body><header class="topbar">DAMS TRIVANDRUM — ZENITH NEET PG / INICET MOCK TEST SERIES</header><main class="card"><h2>Examination Instructions</h2><div class="candidate" id="candidateInfo">Loading candidate…</div><div class="meta"><div class="pill">Exam: <b id="examName">--</b></div><div class="pill">Start (IST): <b id="startIST">--</b></div><div class="pill">End (IST): <b id="endIST">--</b></div><div class="pill">Status: <b id="statusTxt">Checking…</b></div></div><ul><li>Read each question carefully before answering.</li><li>Do not refresh or close the tab during the exam.</li><li>Tab switching or minimizing the browser may be counted as violations.</li><li>Use of multiple devices during the examination is strictly prohibited.</li><li>Click Submit only when you are finished.</li><li>Remember your Candidate ID to check the result.</li><li>Admin approval is specific to this selected exam and this browser session.</li></ul><label><input id="agree" type="checkbox"> I have read and understood the instructions.</label><p><button class="btn" id="startBtn" disabled>Start Exam</button></p><div id="msg" class="notice">Verifying administrator approval…</div><p><a href="result.html">Previous Results</a> · <a href="#" id="logoutLink">Logout</a></p></main>
-<script src="config.js?v=20261113_direct_approval_v2"></script><script>
-'use strict';(function(){const $=id=>document.getElementById(id);function read(){try{return JSON.parse(sessionStorage.getItem('neet_candidate')||'null');}catch(_){return null;}}const c=read();if(!c||!c.token||!c.accessToken||!c.deviceSessionId||!c.examWindowId){location.replace('exam-selector.html');return;}const ex=c.selectedExam||{};const startMs=Date.parse(ex.startISO||'');const endMs=Date.parse(ex.endISO||'');if(Number.isFinite(startMs))window.EXAM_START_MS=startMs;if(Number.isFinite(endMs))window.EXAM_END_MS=endMs;$('candidateInfo').textContent='Name: '+(c.name||'')+' | Candidate ID: '+c.candidateId+' | Email: '+(c.email||'');$('examName').textContent=ex.examName||c.examWindowId;$('startIST').textContent=window.formatIST?window.formatIST(startMs):new Date(startMs).toLocaleString();$('endIST').textContent=window.formatIST?window.formatIST(endMs):new Date(endMs).toLocaleString();function say(t,bad){$('msg').textContent=t;$('msg').classList.toggle('error',!!bad);}async function api(action){const r=await fetch(window.API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,token:c.token,candidateId:c.candidateId,examWindowId:c.examWindowId,accessToken:c.accessToken,deviceSessionId:c.deviceSessionId}),cache:'no-store'});const t=await r.text();let d;try{d=JSON.parse(t);}catch(_){throw new Error('Invalid response from examination server.');}if(!r.ok||d.ok===false)throw new Error(d.error||d.message||'Request failed');return d;}let authorized=false;function tick(){const now=Date.now();const open=Number.isFinite(startMs)&&Number.isFinite(endMs)&&now>=startMs&&now<=endMs;$('startBtn').disabled=!authorized||!open||!$('agree').checked;if(authorized)say(open?'Your approval is active. You may start the selected examination.':'Your approval is active. The exam is not currently open.',false);}async function check(){try{const d=await api('checkExamAccess');authorized=d.authorized===true;if(!authorized)throw new Error('Administrator approval is not active for this exam window.');$('statusTxt').textContent='Approved';say('Administrator approval confirmed for '+(ex.examName||c.examWindowId)+'.',false);tick();}catch(e){authorized=false;$('statusTxt').textContent='Not approved';$('startBtn').disabled=true;say(e.message+' Return to Exam Selector to request approval again.',true);setTimeout(()=>location.replace('exam-selector.html?reauthorize=1'),1800);}}$('agree').addEventListener('change',tick);$('startBtn').addEventListener('click',async()=>{try{const d=await api('checkExamAccess');if(!d.authorized)throw new Error('Approval was revoked.');location.replace('exam.html?v=20261113_direct_approval_v2');}catch(e){authorized=false;say(e.message,true);tick();}});$('logoutLink').addEventListener('click',async e=>{e.preventDefault();try{await api('cancelCandidateLogin');}catch(_){}sessionStorage.removeItem('neet_candidate');location.replace('login.html');});check();setInterval(tick,1000);})();
-</script></body></html>
+</style><link rel="preconnect" href="https://script.google.com" crossorigin>
+<link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
+<link rel="dns-prefetch" href="//script.google.com">
+<link rel="stylesheet" href="ui-feedback.css?v=20261114_fast_ui_v1">
+</head><body><header class="topbar">DAMS TRIVANDRUM — ZENITH NEET PG / INICET MOCK TEST SERIES</header><main class="card"><h2>Examination Instructions</h2><div class="candidate" id="candidateInfo">Loading candidate…</div><div class="meta"><div class="pill">Exam: <b id="examName">--</b></div><div class="pill">Start (IST): <b id="startIST">--</b></div><div class="pill">End (IST): <b id="endIST">--</b></div><div class="pill">Status: <b id="statusTxt">Checking…</b></div></div><ul><li>Read each question carefully before answering.</li><li>Do not refresh or close the tab during the exam.</li><li>Tab switching or minimizing the browser may be counted as violations.</li><li>Use of multiple devices during the examination is strictly prohibited.</li><li>Click Submit only when you are finished.</li><li>Remember your Candidate ID to check the result.</li><li>Admin approval is specific to this selected exam and this browser session.</li></ul><label><input id="agree" type="checkbox"> I have read and understood the instructions.</label><p><button class="btn" id="startBtn" disabled>Start Exam</button></p><div id="msg" class="notice">Verifying administrator approval…</div><p><a href="result.html">Previous Results</a> · <a href="#" id="logoutLink">Logout</a></p></main>
+<script src="config.js?v=20261114_fast_ui_v1"></script>
+<script>
+'use strict';
+(function(){
+  const $=id=>document.getElementById(id);
+  function read(){try{return JSON.parse(sessionStorage.getItem('neet_candidate')||'null');}catch(_){return null;}}
+  const c=read();
+  if(!c||!c.token||!c.accessToken||!c.deviceSessionId||!c.examWindowId){location.replace('exam-selector.html');return;}
+  const ex=c.selectedExam||{};
+  const startMs=Date.parse(ex.startISO||'');
+  const endMs=Date.parse(ex.endISO||'');
+  if(Number.isFinite(startMs))window.EXAM_START_MS=startMs;
+  if(Number.isFinite(endMs))window.EXAM_END_MS=endMs;
+  $('candidateInfo').textContent='Name: '+(c.name||'')+' | Candidate ID: '+c.candidateId+' | Email: '+(c.email||'');
+  $('examName').textContent=ex.examName||c.examWindowId;
+  $('startIST').textContent=window.formatIST?window.formatIST(startMs):new Date(startMs).toLocaleString();
+  $('endIST').textContent=window.formatIST?window.formatIST(endMs):new Date(endMs).toLocaleString();
+  function say(t,bad){if($('msg').textContent!==t)$('msg').textContent=t;$('msg').classList.toggle('error',!!bad);}
+  async function api(action){
+    const r=await fetch(window.API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,token:c.token,candidateId:c.candidateId,examWindowId:c.examWindowId,accessToken:c.accessToken,deviceSessionId:c.deviceSessionId}),cache:'no-store'});
+    const t=await r.text();let d;
+    try{d=JSON.parse(t);}catch(_){throw new Error('Invalid response from examination server.');}
+    if(!r.ok||d.ok===false)throw new Error(d.error||d.message||'Request failed');
+    return d;
+  }
+  let authorized=false;
+  let starting=false;
+  function tick(){
+    const now=Date.now();
+    const open=Number.isFinite(startMs)&&Number.isFinite(endMs)&&now>=startMs&&now<=endMs;
+    $('startBtn').disabled=starting||!authorized||!open||!$('agree').checked;
+    if(authorized&&!starting)say(open?'Your approval is active. You may start the selected examination.':'Your approval is active. The exam is not currently open.',false);
+  }
+  async function check(){
+    try{
+      const d=await api('checkExamAccess');
+      authorized=d.authorized===true;
+      if(!authorized)throw new Error('Administrator approval is not active for this exam window.');
+      $('statusTxt').textContent='Approved';
+      say('Administrator approval confirmed for '+(ex.examName||c.examWindowId)+'.',false);
+      tick();
+    }catch(e){
+      authorized=false;$('statusTxt').textContent='Not approved';$('startBtn').disabled=true;
+      say(e.message+' Return to Exam Selector to request approval again.',true);
+      setTimeout(()=>location.replace('exam-selector.html?reauthorize=1'),1800);
+    }
+  }
+  $('agree').addEventListener('change',tick);
+  $('startBtn').addEventListener('click',async()=>{
+    if(starting||!authorized||!$('agree').checked)return;
+    starting=true;
+    const button=$('startBtn');
+    button.disabled=true;button.classList.add('is-loading');button.setAttribute('aria-busy','true');button.textContent='Checking approval…';
+    try{
+      const d=await api('checkExamAccess');
+      if(!d.authorized)throw new Error('Approval was revoked.');
+      button.textContent='Opening examination…';
+      location.replace('exam.html?v=20261114_fast_ui_v1');
+    }catch(e){
+      authorized=false;starting=false;
+      button.classList.remove('is-loading');button.removeAttribute('aria-busy');button.textContent='Start Exam';
+      say(e.message,true);tick();
+    }
+  });
+  $('logoutLink').addEventListener('click',async e=>{
+    e.preventDefault();
+    const link=$('logoutLink');link.classList.add('feedback');link.textContent='Logging out…';
+    try{await api('cancelCandidateLogin');}catch(_){}
+    sessionStorage.removeItem('neet_candidate');location.replace('login.html');
+  });
+  check();
+  setInterval(tick,1000);
+})();
+</script>
+<script src="ui-feedback.js?v=20261114_fast_ui_v1" defer></script>
+</body></html>
