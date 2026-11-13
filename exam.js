@@ -13,21 +13,7 @@
 
 'use strict';
 
-// Visual press feedback for every CBT button (question palette, navigation,
-// mark/clear, image controls and submit) without changing exam logic.
-(function installButtonFeedback(){
-  const style=document.createElement('style');
-  style.textContent='button{transition:transform .12s ease,box-shadow .12s ease,filter .12s ease}button:active:not(:disabled),button.cbt-button-feedback:not(:disabled){transform:translateY(1px) scale(.98);box-shadow:inset 0 2px 5px rgba(0,0,0,.18),0 0 0 3px rgba(77,139,196,.25);filter:brightness(1.05)}button[aria-busy="true"]{cursor:progress;opacity:.8}button[aria-busy="true"]:after{content:"";display:inline-block;width:10px;height:10px;margin-left:8px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;vertical-align:-1px;animation:cbtButtonSpin .7s linear infinite}@keyframes cbtButtonSpin{to{transform:rotate(360deg)}}';
-  (document.head||document.documentElement).appendChild(style);
-  document.addEventListener('click',event=>{
-    const button=event.target&&event.target.closest?event.target.closest('button'):null;
-    if(!button||button.disabled)return;
-    button.classList.remove('cbt-button-feedback');
-    void button.offsetWidth;
-    button.classList.add('cbt-button-feedback');
-    window.setTimeout(()=>button.classList.remove('cbt-button-feedback'),220);
-  },true);
-})();
+// Shared ui-feedback.js provides press/loading feedback across all CBT pages.
 
 function safeParse(s) {
   try {
@@ -96,6 +82,8 @@ if (localStorage.getItem(SUBMITTED_KEY) === 'yes') {
 let Q = [];
 let totalQ = 0;
 let state = null;
+// Stable question palette nodes avoid rebuilding the entire grid on every question change.
+let paletteButtons = [];
 let submitted = false;
 
 let serverEndsAtMs = 0;
@@ -478,33 +466,44 @@ function preloadNextQuestionImage() {
   const preloader = new Image();
 
   preloader.decoding = 'async';
+  if ('fetchPriority' in preloader) preloader.fetchPriority = 'low';
   preloader.src = next.image;
 }
 
 function renderPalette() {
   if (!pal || !state) return;
 
-  pal.innerHTML = '';
+  // Build once per attempt. Repeated navigation only updates the 180 classes,
+  // avoiding repeated DOM allocation and event-listener registration.
+  if (paletteButtons.length !== Q.length || pal.childElementCount !== Q.length) {
+    const fragment = document.createDocumentFragment();
+    paletteButtons = [];
 
-  Q.forEach((q, idx) => {
-    const b = document.createElement('button');
-
-    b.type = 'button';
-    b.textContent = idx + 1;
-
-    b.className =
-      palClass(q.id) +
-      (idx === state.current ? ' current' : '');
-
-    b.addEventListener('click', () => {
-      state.current = idx;
-
-      save();
-      render();
-      scrollToQuestionTop();
+    Q.forEach((q, idx) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = String(idx + 1);
+      b.dataset.questionIndex = String(idx);
+      b.setAttribute('aria-label', 'Go to question ' + (idx + 1));
+      b.addEventListener('click', () => {
+        const targetIndex = Number(b.dataset.questionIndex);
+        if (!Number.isInteger(targetIndex) || targetIndex < 0 || targetIndex >= Q.length) return;
+        state.current = targetIndex;
+        save();
+        render();
+        scrollToQuestionTop();
+      });
+      paletteButtons.push(b);
+      fragment.appendChild(b);
     });
 
-    pal.appendChild(b);
+    pal.replaceChildren(fragment);
+  }
+
+  paletteButtons.forEach((button, idx) => {
+    const q = Q[idx];
+    button.className = palClass(q.id) + (idx === state.current ? ' current' : '');
+    button.setAttribute('aria-pressed', String(idx === state.current));
   });
 }
 
