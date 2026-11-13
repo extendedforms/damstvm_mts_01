@@ -1,513 +1,200 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DAMS TRIVANDRUM - MOCK TEST SERIES - Exam</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#071a32">
+<title>DAMS CBT Centre Admin</title>
 
 <style>
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #ffffff;
-      color: #111;
-    }
-
-    .topbar {
-      background: #003b66;
-      color: white;
-      min-height: 34px;
-      padding: 7px 14px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 14px;
-      font-weight: bold;
-      position: sticky;
-      top: 0;
-      z-index: 999;
-    }
-
-    .layout {
-      display: grid;
-      grid-template-columns: 1fr 310px;
-      min-height: calc(100vh - 34px);
-    }
-
-    .main {
-      padding: 15px 45px;
-      background: #ffffff;
-    }
-
-    .qbox { max-width: 950px; }
-
-    .student-info {
-      font-size: 13px;
-      margin-bottom: 10px;
-      line-height: 1.5;
-      color: #333;
-    }
-
-    .qtitle {
-      font-weight: bold;
-      margin-bottom: 12px;
-      font-size: 15px;
-    }
-
-    .qtext {
-      background: #f7f7f7;
-      padding: 12px;
-      border-radius: 4px;
-      line-height: 1.45;
-      font-size: 15px;
-      margin-bottom: 14px;
-      white-space: pre-wrap;
-    }
-
-    .media-status {
-      display: none;
-      padding: 12px;
-      margin: 12px 0;
-      background: #eef3f9;
-      border: 1px solid #d6dce5;
-      border-radius: 6px;
-      color: #003b66;
-      font-size: 14px;
-      font-weight: bold;
-      text-align: center;
-    }
-
-    .qimg {
-      width: 100%;
-      max-height: 520px;
-      object-fit: contain;
-      display: block;
-      margin: 12px auto;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      cursor: zoom-in;
-      background: #ffffff;
-    }
-
-    .qvideo {
-      width: 100%;
-      max-height: 520px;
-      display: block;
-      margin: 12px auto;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      background: #000000;
-    }
-
-    .opts { margin-top: 10px; }
-
-    .opt {
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      padding: 10px 12px;
-      margin-bottom: 8px;
-      font-size: 14px;
-      background: white;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .opt:hover { background: #f6f8fb; }
-
-    .opt.selected {
-      background: #dbeafe;
-      border-color: #003b66;
-      font-weight: bold;
-    }
-
-    .radio-circle {
-      width: 13px;
-      height: 13px;
-      min-width: 13px;
-      border-radius: 50%;
-      border: 2px solid #8a8a8a;
-      display: inline-block;
-      position: relative;
-    }
-
-    .opt.selected .radio-circle { border-color: #0057d9; }
-
-    .opt.selected .radio-circle::after {
-      content: "";
-      width: 7px;
-      height: 7px;
-      background: #0057d9;
-      border-radius: 50%;
-      position: absolute;
-      left: 1px;
-      top: 1px;
-    }
-
-    .actions {
-      display: flex;
-      gap: 8px;
-      margin-top: 12px;
-      flex-wrap: wrap;
-    }
-
-    button {
-      background: #003b66;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      padding: 9px 14px;
-      font-weight: bold;
-      cursor: pointer;
-      font-size: 13px;
-    }
-
-    button:hover { opacity: 0.9; }
-
-    button:disabled {
-      opacity: 0.45;
-      cursor: not-allowed;
-    }
-
-    button.danger { background: #c40035; }
-
-    .palette {
-      background: #f3f5fa;
-      border-left: 1px solid #d6dce5;
-      padding: 25px 18px;
-      min-height: calc(100vh - 34px);
-      position: sticky;
-      top: 34px;
-      max-height: calc(100vh - 34px);
-      overflow-y: auto;
-      scroll-behavior: smooth;
-    }
-
-    .palette h3 {
-      margin: 0 0 16px 0;
-      font-size: 20px;
-    }
-
-    #pal {
-      display: grid;
-      grid-template-columns: repeat(6, 38px);
-      gap: 10px;
-      align-items: center;
-    }
-
-    #pal button {
-      width: 38px;
-      height: 38px;
-      padding: 0;
-      border-radius: 6px;
-      border: none;
-      font-size: 13px;
-      font-weight: bold;
-      color: #111;
-      background: #dbe3e7;
-    }
-
-    #pal button.current {
-      outline: 3px solid #000;
-      outline-offset: 2px;
-    }
-
-    #pal button.unanswered {
-      background: #dbe3e7;
-      color: #111;
-    }
-
-    #pal button.answered {
-      background: #2e7d32;
-      color: white;
-    }
-
-    #pal button.review {
-      background: #7b1fa2;
-      color: white;
-    }
-
-    #pal button.ansreview {
-      background: #0d70b7;
-      color: white;
-    }
-
-    .legend {
-      margin-top: 16px;
-      font-size: 13px;
-    }
-
-    .legend div {
-      margin-bottom: 8px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .dot {
-      width: 13px;
-      height: 13px;
-      display: inline-block;
-      border-radius: 3px;
-    }
-
-    .dot.unanswered { background: #dbe3e7; }
-    .dot.answered { background: #2e7d32; }
-    .dot.review { background: #7b1fa2; }
-    .dot.ansreview { background: #0d70b7; }
-
-    .warning {
-      color: #c62828;
-      font-weight: bold;
-      margin-top: 14px;
-      font-size: 14px;
-    }
-
-    .img-modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.92);
-      z-index: 9999;
-    }
-
-    .img-modal.show { display: block; }
-
-    .img-modal-top {
-      height: 55px;
-      display: flex;
-      justify-content: flex-end;
-      align-items: center;
-      gap: 10px;
-      padding: 10px;
-    }
-
-    .img-modal-body {
-      height: calc(100vh - 55px);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      overflow: auto;
-    }
-
-    .img-modal-body img {
-      max-width: 95%;
-      max-height: 95%;
-      object-fit: contain;
-    }
-
-    @media (max-width: 768px) {
-      .topbar {
-        height: auto;
-        min-height: 36px;
-        font-size: 13px;
-        padding: 8px 10px;
-      }
-
-      .layout { display: block; }
-
-      .main { padding: 12px; }
-
-      .qtext { font-size: 14px; }
-
-      .qimg,
-      .qvideo {
-        max-height: 360px;
-      }
-
-      .opt {
-        font-size: 14px;
-        padding: 10px;
-      }
-
-      .actions { gap: 6px; }
-
-      .actions button {
-        padding: 8px 10px;
-        font-size: 12px;
-      }
-
-      .palette {
-        border-left: none;
-        border-top: 1px solid #d6dce5;
-        min-height: auto;
-        padding: 18px 12px;
-        position: static;
-        max-height: 55vh;
-        overflow-y: auto;
-        scroll-behavior: smooth;
-      }
-
-      #pal {
-        grid-template-columns: repeat(6, 42px);
-        gap: 9px;
-      }
-
-      #pal button {
-        width: 42px;
-        height: 42px;
-        font-size: 13px;
-      }
-    }
-
-    @media (max-width: 380px) {
-      #pal { grid-template-columns: repeat(5, 42px); }
-    }
-
-    #qImgWrap img {
-      width: 100%;
-      max-height: 520px;
-      object-fit: contain;
-      display: block;
-      margin: 12px auto;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      cursor: zoom-in;
-      background: #fff;
-    }
-
-    #imgModalPic {
-      max-width: 95%;
-      max-height: 95%;
-      object-fit: contain;
-    }
-
-    .student-info { margin-bottom: 10px; }
-    .schedule-info { font-size: 12px; font-weight: normal; }
-
-    /* Candidate ID in exam header */
-    .candidate-id-display {
-      font-size: 12px;
-      font-weight: bold;
-      white-space: nowrap;
-    }
-
-    @media (max-width: 768px) {
-      .candidate-id-display {
-        display: block;
-        margin-top: 3px;
-        font-size: 12px;
-      }
-    }
+*{box-sizing:border-box}
+body{margin:0;padding:20px;background:#f1f4f8;color:#172b45;font-family:Arial,sans-serif}
+.wrap{max-width:1100px;margin:auto}
+.panel{background:#fff;border:1px solid #dfe6ee;border-radius:14px;padding:18px;margin:14px 0;box-shadow:0 5px 18px #0b234010}
+h1{color:#0c2d50;margin:4px 0 6px}
+.muted{color:#63748a;font-size:13px}
+.row{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+input,select{padding:11px;border:1px solid #cbd5e1;border-radius:8px;min-width:180px;flex:1;max-width:100%}
+button{padding:10px 14px;border:0;border-radius:8px;background:#174a7c;color:#fff;font-weight:700;cursor:pointer}
+button.secondary{background:#e9eff6;color:#173f6c}
+button.danger{background:#a52636}
+button.success{background:#177245}
+button:disabled{opacity:.5;cursor:not-allowed}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td,th{text-align:left;border-bottom:1px solid #e3e8ef;padding:9px;vertical-align:top;overflow-wrap:anywhere}
+.table-wrap{overflow-x:auto}
+#dashboard{display:none}
+#loginPanel{max-width:460px;margin:7vh auto}
+.notice{padding:10px;background:#eef3f9;border-radius:8px;margin-top:10px;white-space:pre-wrap;font-size:13px}
+.error{color:#a11;background:#fff0f0}
+.section-title{margin:0 0 12px}
+.check{min-width:auto;flex:0}
+.file-config{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.file-config input{min-width:260px}
+video{width:min(100%,480px);background:#101820;border-radius:10px;display:none;margin-top:12px}
+#cameraMsg{font-size:13px;color:#617086}
+.status{font-weight:700}
+.status.GRANTED,.status.ALREADY_GRANTED,.status.EXTERNAL{color:#177245}
+.status.NOT_GRANTED,.status.REVOKED{color:#63748a}
+.status.OLD_FILE{color:#a52636}
+.small{font-size:12px}
 </style>
-
-<link rel="stylesheet" href="dams-theme.css?v=1">
-
 </head>
 
 <body>
+<main class="wrap">
 
-  <header class="topbar">
-    <div>
-      DAMS TRIVANDRUM - MOCK TEST SERIES
+<header>
+<h1>DAMS TRIVANDRUM — CBT Centre Admin</h1>
+<p class="muted">
+Authenticated admin console • direct exam-wise approval • Google Drive Answer Key permissions • audit
+</p>
+</header>
 
-      <span class="candidate-id-display">
-        | Candidate ID: <b id="candidateIdDisplay">--</b>
-      </span>
+<section class="panel" id="loginPanel">
+<h2>Admin Login</h2>
+<div class="row">
+<input id="adminUser" autocomplete="username" placeholder="Admin username">
+<input id="adminPass" type="password" autocomplete="current-password" placeholder="Admin password">
+</div>
+<p><button id="loginBtn">Sign in</button></p>
+<div id="loginMsg" class="notice">
+Use credentials configured in Apps Script Script Properties.
+</div>
+</section>
 
-      <span class="schedule-info">
-        | IST: <span id="istClock">--</span>
-      </span>
-    </div>
+<div id="dashboard">
 
-    <div>
-      Time Left: <b id="timeLeft">60:00</b>
-      &nbsp; | &nbsp;
-      Violations: <b id="vio">0</b>
-    </div>
-  </header>
+<section class="panel">
+<div class="row">
+<h2 class="section-title" style="flex:1">Pending exam approval requests</h2>
+<button id="refreshBtn" class="secondary">Refresh</button>
+</div>
 
-  <div class="layout">
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Candidate</th>
+<th>Email</th>
+<th>Selected exam</th>
+<th>Device</th>
+<th>Requested</th>
+<th>Expires</th>
+<th>Decision</th>
+</tr>
+</thead>
+<tbody id="pendingBody"></tbody>
+</table>
+</div>
 
-    <main class="main">
-      <div class="qbox">
+<div id="actionMsg" class="notice">
+No pending exam approval action performed.
+</div>
+</section>
 
-        <div class="student-info" id="studentInfo"></div>
+<section class="panel">
+<h2 class="section-title">Google Drive Answer Key permissions</h2>
 
-        <div class="student-info schedule-info">
-          Exam window:
-          <span id="examStartIST">--</span>
-          to
-          <span id="examEndIST">--</span>
-        </div>
+<p class="muted">
+Choose an exam. Only candidates with a submitted result for that exact exam window become eligible, and permissions remain locked until its official end time. Grant reader access individually or in sequential bulk batches.
+</p>
 
-        <div id="qTitle" class="qtitle">Loading examination...</div>
-        <div id="qText" class="qtext"></div>
-        <div id="qImgWrap"></div>
-        <div id="opts" class="opts"></div>
+<div class="row">
+<select id="answerExamSelect">
+<option value="">Loading exam windows…</option>
+</select>
+<button id="refreshAnswerKeyBtn" class="secondary">Refresh candidates</button>
+</div>
 
-        <div class="actions">
-          <button id="prevBtn" type="button">Previous</button>
-          <button id="clearBtn" type="button">Clear Response</button>
-          <button id="markBtn" type="button">Mark for Review</button>
-          <button id="nextBtn" type="button">Next</button>
-        </div>
+<div class="file-config">
+<input id="answerKeyFileId" placeholder="Private Answer Key PDF Drive file ID or URL">
+<button id="saveAnswerKeyFileBtn">Save PDF for this exam</button>
+</div>
 
-        <div class="actions">
-          <button id="submitBtn" class="danger" type="button">Submit</button>
-        </div>
+<div id="answerKeyInfo" class="notice">
+Select an exam to inspect eligible submitted candidates.
+</div>
 
-        <div class="warning" id="warning"></div>
+<div class="row" style="margin:12px 0">
+<label class="row small">
+<input id="selectAllAnswerCandidates" class="check" type="checkbox">
+Select all eligible candidates
+</label>
+<button id="bulkGrantAnswerKeyBtn" class="success">Grant selected (bulk)</button>
+</div>
 
-      </div>
-    </main>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Select</th>
+<th>Candidate</th>
+<th>Registered email</th>
+<th>Score</th>
+<th>Submitted</th>
+<th>Drive status</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody id="answerKeyCandidatesBody"></tbody>
+</table>
+</div>
 
-    <aside class="palette" id="paletteBox">
-      <h3>Questions</h3>
-      <div id="pal"></div>
+<div id="answerKeyActionMsg" class="notice">
+No permission action performed.
+</div>
+</section>
 
-      <div class="legend">
-        <div><span class="dot unanswered"></span> Unanswered</div>
-        <div><span class="dot answered"></span> Answered</div>
-        <div><span class="dot review"></span> Marked</div>
-        <div><span class="dot ansreview"></span> Answered + Marked</div>
-      </div>
-    </aside>
+<section class="panel">
+<h2 class="section-title">Active centre authorizations</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Candidate</th>
+<th>Centre</th>
+<th>Authorized at</th>
+<th>Last heartbeat</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody id="sessionsBody"></tbody>
+</table>
+</div>
+</section>
 
-  </div>
+<section class="panel">
+<h2 class="section-title">Recent audit events</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Time</th>
+<th>Candidate</th>
+<th>Event</th>
+<th>Admin</th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody id="auditBody"></tbody>
+</table>
+</div>
+</section>
 
-  <div id="imgModal" class="img-modal" aria-hidden="true">
-    <div class="img-modal-top">
-      <button id="imgFullBtn" type="button">Fullscreen</button>
-      <button id="imgCloseBtn" class="danger" type="button">Close</button>
-    </div>
+<p>
+<button id="logoutAdmin" class="secondary">Admin logout</button>
+</p>
 
-    <div class="img-modal-body">
-      <img id="imgModalPic" alt="Question image enlarged" />
-    </div>
-  </div>
+</div>
+</main>
 
-  <!-- Load configuration first, then the single exam controller. -->
-  <script src="config.js?v=20261113_direct_approval_v2"></script>
-  <script src="exam.js?v=20261113_direct_approval_v2"></script>
+<!-- Keep your existing backend configuration unchanged -->
+<script src="config.js?v=20261113_direct_approval_v2"></script>
 
-  <!-- Display logged-in Candidate ID -->
-  <script>
-    (function () {
-      try {
-        const candidate = JSON.parse(
-          sessionStorage.getItem("neet_candidate") || "{}"
-        );
-
-        const candidateId =
-          candidate.candidateId || candidate.id || "";
-
-        const display = document.getElementById("candidateIdDisplay");
-
-        if (display) {
-          display.textContent = candidateId || "Not available";
-        }
-      } catch (error) {
-        const display = document.getElementById("candidateIdDisplay");
-        if (display) {
-          display.textContent = "Not available";
-        }
-      }
-    })();
-  </script>
+<!-- Updated admin JavaScript cache version -->
+<script src="admin.js?v=20261113_fast_approval_v3"></script>
 
 </body>
 </html>
