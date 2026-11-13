@@ -48,17 +48,21 @@ function currentExamWindowId(){
 function setButtonBusy(button,busy,label){
   if(!button)return;
   if(busy){
-    if(!button.dataset.originalText)button.dataset.originalText=button.textContent;
+    if(button.dataset.originalText===undefined)button.dataset.originalText=button.textContent;
+    if(button.dataset.originalDisabled===undefined)button.dataset.originalDisabled=String(button.disabled);
     button.disabled=true;
+    button.classList.add('is-loading');
     button.setAttribute('aria-busy','true');
     if(label)button.textContent=label;
   }else{
-    button.disabled=false;
+    button.disabled=button.dataset.originalDisabled==='true';
+    button.classList.remove('is-loading');
     button.removeAttribute('aria-busy');
-    if(button.dataset.originalText){
+    if(button.dataset.originalText!==undefined){
       button.textContent=button.dataset.originalText;
       delete button.dataset.originalText;
     }
+    delete button.dataset.originalDisabled;
   }
 }
 
@@ -168,6 +172,7 @@ async function refreshPending(){
         approveBtn.disabled=true;
         rejectBtn.disabled=true;
         approveBtn.textContent='Approving…';
+        approveBtn.classList.add('is-loading');
         approveBtn.setAttribute('aria-busy','true');
         try{
           await api('adminApproveExamRequest',{adminToken,requestId:x.requestId});
@@ -179,6 +184,7 @@ async function refreshPending(){
           rejectBtn.disabled=false;
           approveBtn.textContent='Approve';
           rejectBtn.textContent='Reject';
+          approveBtn.classList.remove('is-loading');
           approveBtn.removeAttribute('aria-busy');
         }
       });
@@ -188,6 +194,7 @@ async function refreshPending(){
         approveBtn.disabled=true;
         rejectBtn.disabled=true;
         rejectBtn.textContent='Rejecting…';
+        rejectBtn.classList.add('is-loading');
         rejectBtn.setAttribute('aria-busy','true');
         try{
           await api('adminRejectExamRequest',{adminToken,requestId:x.requestId});
@@ -198,6 +205,7 @@ async function refreshPending(){
           approveBtn.disabled=false;
           rejectBtn.disabled=false;
           rejectBtn.textContent='Reject';
+          rejectBtn.classList.remove('is-loading');
           rejectBtn.removeAttribute('aria-busy');
         }
       });
@@ -706,7 +714,12 @@ $('rankExamSelect').addEventListener('change',refreshExamRankList);
 $('rankRefreshBtn').addEventListener('click',refreshExamRankList);
 $('downloadRankCsvBtn').addEventListener('click',downloadRankCsv);
 $('rankSearchInput').addEventListener('input',renderRankRows);
-$('refreshAnswerKeyBtn').addEventListener('click',refreshAnswerKeyCandidates);
+$('refreshAnswerKeyBtn').addEventListener('click',async()=>{
+  const button=$('refreshAnswerKeyBtn');
+  setButtonBusy(button,true,'Refreshing…');
+  try{await refreshAnswerKeyCandidates();}
+  finally{setButtonBusy(button,false);}
+});
 $('saveAnswerKeyFileBtn').addEventListener('click',saveAnswerKeyFile);
 $('bulkGrantAnswerKeyBtn').addEventListener('click',grantSelectedAnswerKeys);
 
@@ -721,17 +734,6 @@ $('logoutAdmin').addEventListener('click',()=>{
   localStorage.removeItem('centre_admin_token');
   location.reload();
 });
-
-// Every button receives a visible press animation, including dynamically
-// generated Approve / Reject / Grant / Revoke controls.
-document.addEventListener('click',e=>{
-  const button=e.target&&e.target.closest?e.target.closest('button'):null;
-  if(!button||button.disabled)return;
-  button.classList.remove('feedback');
-  void button.offsetWidth;
-  button.classList.add('feedback');
-  window.setTimeout(()=>button.classList.remove('feedback'),220);
-},true);
 
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible'&&dashboardActive){
