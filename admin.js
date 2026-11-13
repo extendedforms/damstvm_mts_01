@@ -8,6 +8,9 @@
 const $=id=>document.getElementById(id);
 let adminToken=localStorage.getItem('centre_admin_token')||'';
 let answerCandidates=[];
+let pendingRefreshTimer=null;
+let pendingRefreshBusy=false;
+let dashboardActive=false;
 
 async function api(action,extra={}){
   const r=await fetch(window.API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,...extra}),cache:'no-store'});
@@ -16,7 +19,23 @@ async function api(action,extra={}){
 }
 function message(id,t,error=false){$(id).textContent=t;$(id).classList.toggle('error',!!error);}
 function currentExamWindowId(){return $('answerExamSelect').value||'';}
-function showDashboard(){ $('loginPanel').style.display='none';$('dashboard').style.display='block';refreshAll();}
+function showDashboard(){
+  $('loginPanel').style.display='none';$('dashboard').style.display='block';
+  dashboardActive=true;
+  refreshAll().then(startPendingAutoRefresh);
+}
+function stopPendingAutoRefresh(){
+  if(pendingRefreshTimer)clearInterval(pendingRefreshTimer);
+  pendingRefreshTimer=null;
+}
+function startPendingAutoRefresh(){
+  stopPendingAutoRefresh();
+  if(!dashboardActive)return;
+  // Admin-side polling is lightweight: only the pending-request table is refreshed.
+  pendingRefreshTimer=setInterval(()=>{
+    if(document.visibilityState==='visible')refreshPending().catch(e=>message('actionMsg',e.message,true));
+  },2500);
+}
 
 async function login(){
   $('loginBtn').disabled=true;
@@ -28,6 +47,9 @@ async function login(){
 }
 
 async function refreshPending(){
+  if(pendingRefreshBusy)return;
+  pendingRefreshBusy=true;
+  try{
   const d=await api('adminGetPendingCandidates',{adminToken});
   $('pendingBody').innerHTML='';
   (d.pending||[]).forEach(x=>{
@@ -40,7 +62,7 @@ async function refreshPending(){
     approveBtn.addEventListener('click',async()=>{
       if(!confirm('Approve '+x.name+' ('+x.candidateId+') for '+x.examName+' only?'))return;
       approveBtn.disabled=true;rejectBtn.disabled=true;
-      try{await api('adminApproveExamRequest',{adminToken,requestId:x.requestId});message('actionMsg','Approved '+x.candidateId+' for '+x.examName+'.');await refreshAll();}
+      try{await api('adminApproveExamRequest',{adminToken,requestId:x.requestId});message('actionMsg','Approved '+x.candidateId+' for '+x.examName+'. Candidate will receive approval automatically.');await refreshPending();}
       catch(e){message('actionMsg',e.message,true);approveBtn.disabled=false;rejectBtn.disabled=false;}
     });
     const rejectBtn=document.createElement('button');rejectBtn.className='danger';rejectBtn.textContent='Reject';
@@ -54,6 +76,7 @@ async function refreshPending(){
     $('pendingBody').appendChild(tr);
   });
   if(!d.pending||!d.pending.length){const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=7;td.textContent='No pending exam approval requests.';tr.appendChild(td);$('pendingBody').appendChild(tr);}
+  } finally { pendingRefreshBusy=false; }
 }
 async function refreshSessions(){
   const d=await api('adminListAccess',{adminToken});$('sessionsBody').innerHTML='';
@@ -154,6 +177,8 @@ $('refreshBtn').addEventListener('click',refreshAll);
 $('answerExamSelect').addEventListener('change',refreshAnswerKeyCandidates);$('refreshAnswerKeyBtn').addEventListener('click',refreshAnswerKeyCandidates);
 $('saveAnswerKeyFileBtn').addEventListener('click',saveAnswerKeyFile);$('bulkGrantAnswerKeyBtn').addEventListener('click',grantSelectedAnswerKeys);
 $('selectAllAnswerCandidates').addEventListener('change',e=>document.querySelectorAll('.answer-candidate-check:not(:disabled)').forEach(x=>x.checked=e.target.checked));
-$('logoutAdmin').addEventListener('click',()=>{localStorage.removeItem('centre_admin_token');location.reload();});
+$('logoutAdmin').addEventListener('click',()=>{dashboardActive=false;stopPendingAutoRefresh();localStorage.removeItem('centre_admin_token');location.reload();});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&dashboardActive)refreshPending().catch(e=>message('actionMsg',e.message,true));});
+window.addEventListener('pagehide',stopPendingAutoRefresh);
 if(adminToken){api('adminGetPendingCandidates',{adminToken}).then(()=>showDashboard()).catch(()=>{localStorage.removeItem('centre_admin_token');adminToken='';});}
 })();
