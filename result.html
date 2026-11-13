@@ -326,6 +326,10 @@
       .candidate-card { grid-template-columns: 1fr; }
       .stats-grid { grid-template-columns: 1fr 1fr; }
     }
+
+    .answer-key-panel { border:1px solid #d9e4ef; border-radius:14px; background:#fbfdff; padding:16px; margin:14px 0; }
+    .answer-key-link { display:inline-block; margin-top:10px; padding:11px 16px; border-radius:9px; background:#174a7c; color:#fff; font-weight:800; text-decoration:none; }
+    .answer-key-link[hidden] { display:none; }
   </style>
 </head>
 
@@ -359,6 +363,15 @@
     <div class="result-note" id="statusNote" role="status" aria-live="polite">
       Loading result…
     </div>
+
+
+    <!-- ANSWER KEY ACCESS: returned only after server verifies release, submitted result and Drive grant. -->
+    <section class="panel answer-key-panel" id="answerKeyPanel">
+      <h2 class="section-title">Answer Key</h2>
+      <p class="section-subtitle">The Answer Key opens in Google Drive only after the official exam window closes and the administrator grants viewer access to your registered email.</p>
+      <div id="answerKeyStatus" class="loading" role="status" aria-live="polite">Select a submitted result to check Answer Key access.</div>
+      <a id="answerKeyLink" class="answer-key-link" href="#" target="_blank" rel="noopener noreferrer" hidden>Open Answer Key in Google Drive</a>
+    </section>
 
     <!-- RESULT HISTORY -->
     <section class="panel" id="historyPanel">
@@ -400,7 +413,7 @@
 
   </main>
 
-  <script src="config.js?v=20261112_qr_c"></script>
-  <script src="result.js?v=20261113_result_history_1"></script>
+  <script src="config.js?v=20261113_direct_approval_v2"></script>
+  <script src="result.js?v=20261113_direct_approval_v2"></script>
 </body>
 </html>
