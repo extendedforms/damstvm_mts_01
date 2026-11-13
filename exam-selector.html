@@ -12,12 +12,17 @@
 @keyframes spin{to{transform:rotate(360deg)}}
 @media(max-width:600px){body{padding:10px}.head{padding:18px}.head h1{font-size:21px}.panel{padding:14px}.row .btn{flex:1 1 auto}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
-</style></head><body><main class="wrap">
+</style><link rel="preconnect" href="https://script.google.com" crossorigin>
+<link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
+<link rel="dns-prefetch" href="//script.google.com">
+<link rel="stylesheet" href="ui-feedback.css?v=20261114_fast_ui_v1">
+</head><body><main class="wrap">
 <header class="head"><h1>DAMS TRIVANDRUM — Select Examination</h1><div class="muted" id="candidateLine">Loading candidate session…</div></header>
 <section class="panel"><h2>Available examinations</h2><p class="muted">Sign in first, then select the exact examination you intend to attend. Admin approval is requested only for that selected exam; no approval is needed to view previously submitted results.</p><div id="examList" class="exam-list"><div class="muted">Loading examination windows…</div></div><div id="selectorStatus" class="notice" role="status" aria-live="polite">Checking available examinations…</div></section>
 <section class="panel"><h2>Exam-wise administrator approval</h2><p class="muted" id="selectedExamText">Select an examination above to continue.</p><div class="row"><button class="btn" id="requestApprovalBtn" disabled>Request Admin Approval</button><button class="btn secondary" id="refreshExamsBtn">Refresh Examinations</button><button class="btn secondary" id="logoutBtn">Logout</button></div><div id="approvalStatus" class="notice" role="status" aria-live="polite">No approval request has been made.</div></section>
 <div class="links"><a href="result.html">Previous Results / Performance Analysis</a></div>
 </main>
-<script src="config.js?v=20261113_direct_approval_v2"></script>
-<script src="exam-selector.js?v=20261114_button_feedback_v1"></script>
+<script src="config.js?v=20261114_fast_ui_v1"></script>
+<script src="exam-selector.js?v=20261114_fast_ui_v1"></script>
+<script src="ui-feedback.js?v=20261114_fast_ui_v1" defer></script>
 </body></html>
