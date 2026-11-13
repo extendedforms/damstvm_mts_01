@@ -23,12 +23,15 @@ window.EXAM_END_IST   = "2026-11-27T13:30:00+05:30";
 window.EXAM_START_MS = Date.parse(window.EXAM_START_IST);
 window.EXAM_END_MS   = Date.parse(window.EXAM_END_IST);
 
+// Construct this once. The exam clock calls formatIST every second.
+window.IST_DATE_FORMATTER = new Intl.DateTimeFormat("en-IN", {
+  timeZone: window.EXAM_TZ, year: "numeric", month: "short", day: "2-digit",
+  hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true
+});
 window.formatIST = function formatIST(dateOrMs = Date.now()) {
   const d = typeof dateOrMs === "number" ? new Date(dateOrMs) : dateOrMs;
-  return new Intl.DateTimeFormat("en-IN", {
-    timeZone: window.EXAM_TZ, year: "numeric", month: "short", day: "2-digit",
-    hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true
-  }).format(d);
+  if (!(d instanceof Date) || !Number.isFinite(d.getTime())) return "--";
+  return window.IST_DATE_FORMATTER.format(d);
 };
 window.isWithinExamWindow = function isWithinExamWindow(nowMs = Date.now()) {
   return Number.isFinite(window.EXAM_START_MS) && Number.isFinite(window.EXAM_END_MS) &&
