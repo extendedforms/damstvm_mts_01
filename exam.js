@@ -304,22 +304,21 @@ async function postAPI(payload, options = {}) {
     }
 
     if (!res.ok || data.ok === false) {
-      throw new Error(
-        data.error ||
-        data.message ||
-        ('HTTP ' + res.status)
-      );
+      const apiError = new Error(data.error || data.message || ('HTTP ' + res.status));
+      apiError.code = data.code || data.statusCode || '';
+      apiError.httpStatus = res.status;
+      throw apiError;
     }
 
     return data;
 
   } catch (err) {
     if (err && err.name === 'AbortError') {
-      throw new Error(
-        'The server took too long to respond. Check your internet connection and retry.'
-      );
+      const timeoutError = new Error('The server took too long to respond. Check your internet connection and retry.');
+      timeoutError.code = 'NETWORK_TIMEOUT';
+      throw timeoutError;
     }
-
+    if (err && !err.code) err.code = 'NETWORK_OR_SERVER_ERROR';
     throw err;
 
   } finally {
@@ -1087,22 +1086,70 @@ async function submitExam(
 
 let centreHeartbeatTimer = null;
 let centreHeartbeatBusy = false;
+let centreHeartbeatFailures = 0;
+let centreHeartbeatTerminal = false;
+
+function isPermanentExamAuthorizationError(err) {
+  const code = String(err && err.code || '').toUpperCase();
+  const message = String(err && err.message || '').toLowerCase();
+  if ([
+    'CENTRE_AUTH_REQUIRED', 'CENTRE_AUTH_INVALID', 'CENTRE_AUTH_REVOKED',
+    'TOKEN_EXPIRED', 'TOKEN_INVALID', 'TOKEN_REVOKED'
+  ].includes(code)) return true;
+  return /exam access requires admin approval|exam access token is invalid|exam access expired or was revoked|token expired or invalid|invalid or revoked token/.test(message);
+}
+
+function interruptExamForAuthorization(err) {
+  if (centreHeartbeatTerminal || submitted) return;
+  centreHeartbeatTerminal = true;
+  if (centreHeartbeatTimer) clearInterval(centreHeartbeatTimer);
+  centreHeartbeatTimer = null;
+  [submitBtn,prevBtn,nextBtn,clearBtn,markBtn].forEach(b=>{if(b)b.disabled=true;});
+  if (qTitle) qTitle.textContent = 'Centre authorization interrupted';
+  if (qText) qText.textContent = 'The server has confirmed that this session token or centre approval is no longer valid. Your locally saved answers remain in this browser. Return to Exam Selector and request fresh approval.';
+  alert('Exam authorization is no longer valid. You will return to Exam Selector for fresh admin approval.');
+  location.replace('exam-selector.html?reauthorize=1');
+}
+
+async function sendCentreHeartbeatWithRetry() {
+  const delays = [0, 2000, 5000, 10000];
+  let lastError = null;
+  for (let i = 0; i < delays.length; i++) {
+    if (delays[i]) await new Promise(resolve => setTimeout(resolve, delays[i]));
+    if (submitted || centreHeartbeatTerminal) return;
+    try {
+      const result = await postAPI({
+        action:'examHeartbeat', token:cand.token,
+        candidateId:activeCandidateId, examWindowId:cand.examWindowId
+      }, {timeoutMs:30000});
+      centreHeartbeatFailures = 0;
+      if (result.tokenExpiresAtISO) cand.tokenExpiresAtISO = result.tokenExpiresAtISO;
+      return;
+    } catch (err) {
+      lastError = err;
+      if (isPermanentExamAuthorizationError(err)) {
+        interruptExamForAuthorization(err);
+        return;
+      }
+      centreHeartbeatFailures++;
+      console.warn('Exam heartbeat temporarily failed; retrying without interrupting the exam.', err);
+    }
+  }
+  // A temporary transport/Apps Script failure is not proof that approval expired.
+  // Keep the exam usable and retry on the next heartbeat cycle.
+  if (lastError) console.warn('Heartbeat retry window exhausted; local exam state remains active.', lastError);
+}
+
 function startCentreHeartbeat() {
   if (centreHeartbeatTimer) clearInterval(centreHeartbeatTimer);
   centreHeartbeatTimer = setInterval(async () => {
-    if (!attemptReady || centreHeartbeatBusy || submitted) return;
+    if (!attemptReady || centreHeartbeatBusy || submitted || centreHeartbeatTerminal) return;
     centreHeartbeatBusy = true;
     try {
-      await postAPI({action:'examHeartbeat',token:cand.token,candidateId:activeCandidateId,examWindowId:cand.examWindowId},{timeoutMs:15000});
-    } catch (err) {
-      if (centreHeartbeatTimer) clearInterval(centreHeartbeatTimer);
-      centreHeartbeatTimer = null;
-      [submitBtn,prevBtn,nextBtn,clearBtn,markBtn].forEach(b=>{if(b)b.disabled=true;});
-      if (qTitle) qTitle.textContent = 'Centre authorization interrupted';
-      if (qText) qText.textContent = 'Exam access is no longer active. Your locally saved answers have been retained in this browser. Return to Exam Selector and request administrator approval again.';
-      alert('Exam access expired or was revoked. You will return to Exam Selector for fresh admin approval.');
-      location.replace('exam-selector.html?reauthorize=1');
-    } finally { centreHeartbeatBusy = false; }
+      await sendCentreHeartbeatWithRetry();
+    } finally {
+      centreHeartbeatBusy = false;
+    }
   }, 45000);
 }
 
