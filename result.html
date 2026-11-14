@@ -340,16 +340,7 @@
       .candidate-card { grid-template-columns: 1fr; }
       .stats-grid { grid-template-columns: 1fr 1fr; }
     }
-
-    .candidate-rank-wrap { overflow-x:auto; width:100%; border:1px solid #e1e7ef; border-radius:10px; }
-    .candidate-rank-table { width:100%; min-width:620px; border-collapse:collapse; font-size:13px; }
-    .candidate-rank-table th, .candidate-rank-table td { padding:10px 11px; border-bottom:1px solid #e8edf3; text-align:left; white-space:nowrap; }
-    .candidate-rank-table th { background:#f1f5f9; color:#34445b; font-weight:850; }
-    .candidate-rank-table tr.current-candidate { background:#edf5ff; font-weight:800; }
-    .candidate-rank-table tr:last-child td { border-bottom:0; }
-    .candidate-rank-note { margin:8px 0 12px; color:#66758a; font-size:12px; line-height:1.5; }
-
-    .answer-key-panel { border:1px solid #d9e4ef; border-radius:14px; background:#fbfdff; padding:16px; margin:14px 0; }
+.answer-key-panel { border:1px solid #d9e4ef; border-radius:14px; background:#fbfdff; padding:16px; margin:14px 0; }
     .answer-key-link { display:inline-block; margin-top:10px; padding:11px 16px; border-radius:9px; background:#174a7c; color:#fff; font-weight:800; text-decoration:none; }
     .answer-key-link[hidden] { display:none; }
   </style>
@@ -394,21 +385,7 @@
       <div id="answerKeyStatus" class="loading" role="status" aria-live="polite">Select a submitted result to check Answer Key access.</div>
       <a id="answerKeyLink" class="answer-key-link" href="#" target="_blank" rel="noopener noreferrer" hidden>Open Answer Key in Google Drive</a>
     </section>
-
-    <!-- CANDIDATE RANK LIST: server checks exact submitted exam and official exam closure. -->
-    <section class="panel" id="candidateRankPanel">
-      <h2 class="section-title">Overall Rank List</h2>
-      <p class="section-subtitle">Available after the official exam end. Only candidates who submitted this exact examination can view the rank list.</p>
-      <div id="candidateRankStatus" class="loading" role="status" aria-live="polite">Select a submitted examination to check its rank list.</div>
-      <div class="candidate-rank-wrap" id="candidateRankWrap" hidden>
-        <table class="candidate-rank-table">
-          <thead><tr><th>Rank</th><th>Candidate</th><th>Candidate ID</th><th>Score</th><th>Correct</th><th>Wrong</th><th>Unattempted</th><th>Time Taken</th></tr></thead>
-          <tbody id="candidateRankBody"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- RESULT HISTORY -->
+<!-- RESULT HISTORY -->
     <section class="panel" id="historyPanel">
       <h2 class="section-title">Result History</h2>
       <p class="section-subtitle">
