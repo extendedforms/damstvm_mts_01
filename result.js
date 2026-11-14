@@ -11,8 +11,7 @@
     candidate: null,
     history: [],
     selectedWindowId: '',
-    requestId: 0,
-    rankRequestId: 0
+    requestId: 0
   };
 
   function parseJson(value) {
@@ -361,64 +360,6 @@
     }
   }
 
-  function clearCandidateRankList(message) {
-    state.rankRequestId++;
-    var wrap = byId('candidateRankWrap');
-    var body = byId('candidateRankBody');
-    if (wrap) wrap.hidden = true;
-    if (body) body.textContent = '';
-    setStatus('candidateRankStatus', message || 'Select a submitted examination to check its rank list.', false);
-  }
-
-  function formatRankDuration(value) {
-    var n = Number(value);
-    if (!Number.isFinite(n) || n < 0) return '-';
-    n = Math.floor(n);
-    var h = Math.floor(n / 3600);
-    var m = Math.floor((n % 3600) / 60);
-    var s = n % 60;
-    return h ? h + 'h ' + m + 'm ' + s + 's' : (m ? m + 'm ' + s + 's' : s + 's');
-  }
-
-  async function loadCandidateRankList(windowId) {
-    var requestId = ++state.rankRequestId;
-    var wrap = byId('candidateRankWrap');
-    var body = byId('candidateRankBody');
-    if (wrap) wrap.hidden = true;
-    if (body) body.textContent = '';
-    if (!windowId) {
-      setStatus('candidateRankStatus', 'No verified exam window is available for this result.', false);
-      return;
-    }
-    setStatus('candidateRankStatus', 'Checking rank-list eligibility…', false);
-    try {
-      var data = await api('getCandidateExamRankList', { examWindowId: windowId });
-      if (requestId !== state.rankRequestId) return;
-      var rankings = Array.isArray(data.rankings) ? data.rankings : [];
-      if (!rankings.length) throw new Error('No submitted candidates are present in this rank list.');
-      rankings.forEach(function (item) {
-        var tr = document.createElement('tr');
-        if (item.isCurrentCandidate) tr.className = 'current-candidate';
-        [item.rank, item.name || 'Candidate', item.candidateId, item.score,
-          item.correct, item.wrong, item.unattempted, formatRankDuration(item.timeTakenSec)]
-          .forEach(function (value) {
-            var td = document.createElement('td');
-            td.textContent = value === undefined || value === null ? '-' : String(value);
-            tr.appendChild(td);
-          });
-        body.appendChild(tr);
-      });
-      if (wrap) wrap.hidden = false;
-      setStatus('candidateRankStatus', data.examName + ' · ' + data.totalSubmitted +
-        ' submitted candidate(s). Tie-break: ' + (data.tieBreakRule || 'higher score, lower time, earlier submission.') +
-        ' Your row is highlighted.', false);
-    } catch (error) {
-      if (requestId !== state.rankRequestId) return;
-      setStatus('candidateRankStatus', error.message || 'The rank list is not available.', true);
-      if (wrap) wrap.hidden = true;
-    }
-  }
-
   function clearAnalysis(message) {
     var content = byId('analysisContent');
     var status = byId('analysisStatus');
@@ -472,8 +413,7 @@
     setStatus('statusNote', 'Result summary loaded. Updating analysis and Answer Key access…', false);
     await Promise.all([
       loadAnalysis(item.examWindowId, item.examName || item.submittedAt),
-      loadAnswerKeyLink(item.examWindowId),
-      loadCandidateRankList(item.examWindowId)
+      loadAnswerKeyLink(item.examWindowId)
     ]);
     setStatus('statusNote', 'Selected examination result loaded successfully.', false);
   }
@@ -493,12 +433,11 @@
       if (c.examWindowId) payload.examWindowId = c.examWindowId;
       var result = await api('getResult', payload);
       renderResult(result);
-      if (result.examWindowId) { state.selectedWindowId = result.examWindowId; await Promise.all([loadAnswerKeyLink(result.examWindowId),loadCandidateRankList(result.examWindowId)]); }
+      if (result.examWindowId) { state.selectedWindowId = result.examWindowId; await loadAnswerKeyLink(result.examWindowId); }
       setStatus('statusNote', 'Exam result loaded successfully.', false);
     } catch (error) {
       if (!stored || firstValue(stored.score, stored.marks, stored.totalScore) === null) {
         clearAnswerKey('No submitted result is selected.');
-      clearCandidateRankList('No submitted result is selected.');
         renderResult({});
         setStatus('statusNote', error.message || 'No result found for the current exam window.', true);
       } else {
