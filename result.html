@@ -173,7 +173,7 @@
 
     .history-item {
       display: grid;
-      grid-template-columns: 1.5fr repeat(4, minmax(70px, .7fr)) auto;
+      grid-template-columns: 1.5fr repeat(5, minmax(70px, .7fr)) auto;
       align-items: center;
       gap: 10px;
       padding: 12px;
@@ -341,14 +341,18 @@
       .stats-grid { grid-template-columns: 1fr 1fr; }
     }
 
+    .candidate-rank-wrap { overflow-x:auto; width:100%; border:1px solid #e1e7ef; border-radius:10px; }
+    .candidate-rank-table { width:100%; min-width:620px; border-collapse:collapse; font-size:13px; }
+    .candidate-rank-table th, .candidate-rank-table td { padding:10px 11px; border-bottom:1px solid #e8edf3; text-align:left; white-space:nowrap; }
+    .candidate-rank-table th { background:#f1f5f9; color:#34445b; font-weight:850; }
+    .candidate-rank-table tr.current-candidate { background:#edf5ff; font-weight:800; }
+    .candidate-rank-table tr:last-child td { border-bottom:0; }
+    .candidate-rank-note { margin:8px 0 12px; color:#66758a; font-size:12px; line-height:1.5; }
+
     .answer-key-panel { border:1px solid #d9e4ef; border-radius:14px; background:#fbfdff; padding:16px; margin:14px 0; }
     .answer-key-link { display:inline-block; margin-top:10px; padding:11px 16px; border-radius:9px; background:#174a7c; color:#fff; font-weight:800; text-decoration:none; }
     .answer-key-link[hidden] { display:none; }
   </style>
-<link rel="preconnect" href="https://script.google.com" crossorigin>
-<link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
-<link rel="dns-prefetch" href="//script.google.com">
-<link rel="stylesheet" href="ui-feedback.css?v=20261114_fast_ui_v1">
 </head>
 
 <body class="result-page">
@@ -391,6 +395,19 @@
       <a id="answerKeyLink" class="answer-key-link" href="#" target="_blank" rel="noopener noreferrer" hidden>Open Answer Key in Google Drive</a>
     </section>
 
+    <!-- CANDIDATE RANK LIST: server checks exact submitted exam and official exam closure. -->
+    <section class="panel" id="candidateRankPanel">
+      <h2 class="section-title">Overall Rank List</h2>
+      <p class="section-subtitle">Available after the official exam end. Only candidates who submitted this exact examination can view the rank list.</p>
+      <div id="candidateRankStatus" class="loading" role="status" aria-live="polite">Select a submitted examination to check its rank list.</div>
+      <div class="candidate-rank-wrap" id="candidateRankWrap" hidden>
+        <table class="candidate-rank-table">
+          <thead><tr><th>Rank</th><th>Candidate</th><th>Candidate ID</th><th>Score</th><th>Correct</th><th>Wrong</th><th>Unattempted</th><th>Time Taken</th></tr></thead>
+          <tbody id="candidateRankBody"></tbody>
+        </table>
+      </div>
+    </section>
+
     <!-- RESULT HISTORY -->
     <section class="panel" id="historyPanel">
       <h2 class="section-title">Result History</h2>
@@ -431,8 +448,7 @@
 
   </main>
 
-  <script src="config.js?v=20261114_fast_ui_v1"></script>
-  <script src="result.js?v=20261114_fast_ui_v1"></script>
-<script src="ui-feedback.js?v=20261114_fast_ui_v1" defer></script>
+  <script src="config.js?v=20261113_direct_approval_v2"></script>
+  <script src="result.js?v=20261114_tab_bound_v1"></script>
 </body>
 </html>
