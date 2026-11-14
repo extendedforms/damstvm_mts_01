@@ -22,9 +22,9 @@
     if(!candidate||!candidate.token)throw new Error('Candidate login session is missing. Please log in again.');
     const url=String(window.API_URL||window.SCRIPT_URL||'').trim();
     if(!url)throw new Error('API_URL is missing. Check config.js.');
-    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,token:candidate.token,candidateId:candidate.candidateId,deviceSessionId:candidate.deviceSessionId,deviceType:candidate.deviceType||'unknown',browserInfo:candidate.browserInfo||navigator.userAgent,...extra}),cache:'no-store',redirect:'follow'});
+    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,token:candidate.token,candidateId:candidate.candidateId,deviceSessionId:candidate.deviceSessionId,tabSessionId:candidate.tabSessionId,deviceType:candidate.deviceType||'unknown',browserInfo:candidate.browserInfo||navigator.userAgent,...extra}),cache:'no-store',redirect:'follow'});
     const t=await r.text();let d;try{d=JSON.parse(t);}catch(_){throw new Error('Invalid response from examination server.');}
-    if(!r.ok||!d||d.ok===false)throw new Error(d.error||d.message||'Request failed');return d;
+    if(!r.ok||!d||d.ok===false){const error=new Error(d.error||d.message||'Request failed');error.code=d.code||'';throw error;}return d;
   }
   function formatTime(v){const d=new Date(v);return Number.isFinite(d.getTime())?new Intl.DateTimeFormat('en-IN',{timeZone:'Asia/Kolkata',dateStyle:'medium',timeStyle:'short'}).format(d):'Not set';}
   function renderExams(){
@@ -132,6 +132,15 @@
   $('logoutBtn').addEventListener('click',logout);
   window.addEventListener('focus',()=>{if(requestId&&!busy){stopPolling();pollApproval();}});
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&requestId&&!busy){stopPolling();pollApproval();}});
-  loadExams().then(resumePending).catch(()=>{});
+  const previousTabSessionId=String(candidate.tabSessionId||'');
+  if(!window.ZenithTabSession||typeof window.ZenithTabSession.ensure!=='function'){say('selectorStatus','Tab security helper is missing. Refresh this page.',true);return;}
+  window.ZenithTabSession.ensure(candidate).then(newTabId=>{
+    if(previousTabSessionId && previousTabSessionId!==newTabId){
+      candidate.accessToken='';candidate.accessId='';candidate.centreId='';
+      sessionStorage.removeItem(cacheKey);requestId='';
+    }
+    candidate.tabSessionId=newTabId;persist();
+    return loadExams();
+  }).then(resumePending).catch(e=>say('selectorStatus',e.message||'Unable to load examination windows.',true));
   window.addEventListener('pagehide',stopPolling);
 })();
