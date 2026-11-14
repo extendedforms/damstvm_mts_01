@@ -66,7 +66,7 @@ if (!cand || !cand.token || !activeCandidateId) {
   throw new Error('Candidate session missing; redirecting to login.');
 }
 
-if (!cand.accessToken || !cand.deviceSessionId) {
+if (!cand.accessToken || !cand.deviceSessionId || !cand.tabSessionId) {
   location.replace('exam-selector.html?reauthorize=1');
   throw new Error('Admin approval missing for the selected exam; redirecting to Exam Selector.');
 }
@@ -97,6 +97,13 @@ let lastViolationAt = 0;
 
 let authoritativeViolationCount = 0;
 let timerIntervalId = null;
+let serverSaveTimerId = null;
+let serverSaveBusy = false;
+let serverSaveAgain = false;
+let tabLeaveTimerId = null;
+let tabLeavePending = false;
+let pageIsUnloading = false;
+let tabAuthorizationRevoked = false;
 
 function suppressViolations(ms = 2500) {
   suppressVioUntil = Date.now() + ms;
@@ -219,16 +226,46 @@ function defaultState() {
 function save() {
   if (!state) return;
 
+  state.deviceSessionId = String(cand.deviceSessionId || '');
+  state.tabSessionId = String(cand.tabSessionId || '');
   try {
-    localStorage.setItem(
-      KEY,
-      JSON.stringify(state)
-    );
+    localStorage.setItem(KEY, JSON.stringify(state));
   } catch (e) {
-    console.warn(
-      'Could not save exam state locally:',
-      e
-    );
+    console.warn('Could not save exam state locally:', e);
+  }
+  if (attemptReady && !submitted) scheduleServerSave(1800);
+}
+
+function scheduleServerSave(delay = 1800) {
+  if (!attemptReady || submitted || !state) return;
+  if (serverSaveTimerId) clearTimeout(serverSaveTimerId);
+  serverSaveTimerId = setTimeout(() => { flushExamStateToServer(); }, Math.max(0, delay));
+}
+
+async function flushExamStateToServer() {
+  if (!attemptReady || submitted || !state) return;
+  if (serverSaveBusy) { serverSaveAgain = true; return; }
+  serverSaveBusy = true;
+  const snapshot = {
+    action: 'saveExamState',
+    token: cand.token,
+    candidateId: activeCandidateId,
+    answers: Object.assign({}, state.answers || {}),
+    marked: Object.assign({}, state.marked || {}),
+    currentQuestion: Number(state.current || 0)
+  };
+  try {
+    await postAPI(snapshot, { timeoutMs: 12000, keepalive: document.visibilityState === 'hidden' });
+  } catch (err) {
+    // A transport failure never revokes approval or resets the server timer.
+    // The localStorage snapshot remains available for same-tab recovery.
+    console.warn('Server autosave temporarily unavailable; local answers remain saved.', err);
+  } finally {
+    serverSaveBusy = false;
+    if (serverSaveAgain && !submitted) {
+      serverSaveAgain = false;
+      scheduleServerSave(500);
+    }
   }
 }
 
@@ -237,10 +274,11 @@ function pad2(n) {
 }
 
 async function postAPI(payload, options = {}) {
-  if (['startExam','submit','violation','examHeartbeat'].includes(payload.action)) {
+  if (['startExam','submit','violation','examHeartbeat','saveExamState','checkExamAccess'].includes(payload.action)) {
     payload = Object.assign({}, payload, {
       accessToken: cand.accessToken || '',
       deviceSessionId: cand.deviceSessionId || '',
+      tabSessionId: cand.tabSessionId || '',
       examWindowId: cand.examWindowId || ''
     });
   }
@@ -326,88 +364,42 @@ async function postAPI(payload, options = {}) {
   }
 }
 
-function loadLocalState() {
-  // Do not migrate the old global state key into a server-managed attempt.
-  // It may contain answers from a different exam or question ordering.
+function loadLocalState(serverState = {}) {
+  // Local progress is trusted only for the same candidate + device + tab.
+  // A different approved device/tab restores the latest server autosave.
+  let local = safeParse(localStorage.getItem(KEY) || '');
+  const sameTabContext = !!(local && typeof local === 'object' &&
+    String(local.deviceSessionId || '') === String(cand.deviceSessionId || '') &&
+    String(local.tabSessionId || '') === String(cand.tabSessionId || ''));
+  let loaded = sameTabContext ? local : defaultState();
 
-  let loaded = safeParse(
-    localStorage.getItem(KEY) || ''
-  );
-
-  if (!loaded || typeof loaded !== 'object') {
-    loaded = defaultState();
+  if (!sameTabContext) {
+    loaded.answers = serverState.savedAnswers && typeof serverState.savedAnswers === 'object' ? serverState.savedAnswers : {};
+    loaded.marked = serverState.savedMarked && typeof serverState.savedMarked === 'object' ? serverState.savedMarked : {};
+    loaded.current = Number.isFinite(Number(serverState.savedCurrentQuestion)) ? Number(serverState.savedCurrentQuestion) : 0;
+    loaded.violations = Math.max(0, Number(serverState.violationCount) || 0);
   }
-
-  if (
-    !loaded.answers ||
-    typeof loaded.answers !== 'object'
-  ) {
-    loaded.answers = {};
-  }
-
-  if (
-    !loaded.marked ||
-    typeof loaded.marked !== 'object'
-  ) {
-    loaded.marked = {};
-  }
-
-  if (
-    !Number.isFinite(loaded.current) ||
-    loaded.current < 0
-  ) {
-    loaded.current = 0;
-  }
-
-  if (loaded.current >= totalQ) {
-    loaded.current = Math.max(0, totalQ - 1);
-  }
-
-  if (!Number.isFinite(loaded.violations)) {
-    loaded.violations = 0;
-  }
-
+  if (!loaded.answers || typeof loaded.answers !== 'object') loaded.answers = {};
+  if (!loaded.marked || typeof loaded.marked !== 'object') loaded.marked = {};
+  if (!Number.isFinite(loaded.current) || loaded.current < 0) loaded.current = 0;
+  if (loaded.current >= totalQ) loaded.current = Math.max(0, totalQ - 1);
+  if (!Number.isFinite(loaded.violations)) loaded.violations = 0;
   loaded.startedAt = serverStartedAtMs;
+  loaded.deviceSessionId = String(cand.deviceSessionId || '');
+  loaded.tabSessionId = String(cand.tabSessionId || '');
 
-  // Keep only this server-issued attempt's question IDs
-  // and valid option IDs.
-
-  const allowedIds = new Set(
-    Q.map(q => String(q.id))
-  );
-
+  const allowedIds = new Set(Q.map(q => String(q.id)));
   Object.keys(loaded.answers).forEach(id => {
-    if (
-      !allowedIds.has(String(id)) ||
-      !['A', 'B', 'C', 'D'].includes(
-        String(loaded.answers[id]).toUpperCase()
-      )
-    ) {
-      delete loaded.answers[id];
-    } else {
-      loaded.answers[id] =
-        String(loaded.answers[id]).toUpperCase();
-    }
+    if (!allowedIds.has(String(id)) || !['A','B','C','D'].includes(String(loaded.answers[id]).toUpperCase())) delete loaded.answers[id];
+    else loaded.answers[id] = String(loaded.answers[id]).toUpperCase();
   });
-
   Object.keys(loaded.marked).forEach(id => {
-    if (!allowedIds.has(String(id))) {
-      delete loaded.marked[id];
-    } else {
-      loaded.marked[id] =
-        loaded.marked[id] === true;
-    }
+    if (!allowedIds.has(String(id))) delete loaded.marked[id];
+    else loaded.marked[id] = loaded.marked[id] === true;
   });
-
   state = loaded;
-
   save();
-
-  // Remove the obsolete shared key.
-
-  try {
-    localStorage.removeItem(LEGACY_KEY);
-  } catch (e) {}
+  try { localStorage.removeItem(LEGACY_KEY); } catch (e) {}
 }
 
 function palClass(qid) {
@@ -820,6 +812,10 @@ async function postViolation(type, details = '') {
       keepalive: true
     });
 
+    if (data.reauthorizationRequired === true) {
+      tabAuthorizationRevoked = true;
+      if (document.visibilityState === 'visible') interruptExamForAuthorization(new Error('You switched away from the exam tab. Admin approval is required again.'));
+    }
     if (
       Number.isFinite(
         Number(data.violationCount)
@@ -898,11 +894,75 @@ function addViolation(reason) {
   }
 }
 
+async function handleConfirmedTabLeave() {
+  if (!tabLeavePending || pageIsUnloading || submitted || !attemptReady || tabAuthorizationRevoked) return;
+  tabLeavePending = false;
+  // Try to persist the latest snapshot first. A transport failure does not
+  // revoke approval; the server receives TAB_SWITCH only when this request can
+  // be delivered and independently validates the exact access + tab binding.
+  await flushExamStateToServer();
+  tabAuthorizationRevoked = true;
+  lastViolationAt = Date.now();
+  state.violations = Math.max(Number(state.violations) || 0, authoritativeViolationCount) + 1;
+  save();
+  if (elVio) elVio.textContent = String(state.violations);
+  try {
+    const result = await postAPI({
+      action:'violation', token:cand.token, candidateId:activeCandidateId,
+      type:'TAB_SWITCH', details:'Exam tab became hidden; require fresh Admin approval.'
+    }, { timeoutMs:12000, keepalive:true });
+    if (Number.isFinite(Number(result.violationCount))) {
+      authoritativeViolationCount = Math.max(authoritativeViolationCount,Number(result.violationCount));
+      state.violations = Math.max(state.violations,authoritativeViolationCount);
+      save();
+    }
+  } catch (err) {
+    // Do not reuse this tab's old approval merely because it went offline while
+    // hidden. The next selector request will create a new pending Admin request;
+    // Admin approval will supersede the old access row when it is granted.
+    console.warn('Tab-switch authorization revocation could not be confirmed immediately:',err);
+  }
+  interruptExamForAuthorization(new Error('You switched away from the exam tab. Fresh Admin approval is required to continue.'));
+}
+
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') {
-    addViolation('TAB_SWITCH');
+    tabLeavePending = true;
+    if (tabLeaveTimerId) clearTimeout(tabLeaveTimerId);
+    tabLeaveTimerId = setTimeout(handleConfirmedTabLeave, 1200);
+  } else if (document.visibilityState === 'visible') {
+    if (tabLeavePending) {
+      if (tabLeaveTimerId) clearTimeout(tabLeaveTimerId);
+      tabLeaveTimerId = null;
+      handleConfirmedTabLeave();
+    } else if (tabAuthorizationRevoked) {
+      interruptExamForAuthorization(new Error('A fresh Admin approval is required for this tab.'));
+    } else {
+      verifyExamTabAuthorization();
+      if (navigator.onLine) scheduleServerSave(300);
+    }
   }
 });
+
+function cancelPendingTabLeaveForNavigation() {
+  pageIsUnloading = true;
+  tabLeavePending = false;
+  if (tabLeaveTimerId) clearTimeout(tabLeaveTimerId);
+  tabLeaveTimerId = null;
+}
+window.addEventListener('beforeunload', cancelPendingTabLeaveForNavigation);
+window.addEventListener('pagehide', cancelPendingTabLeaveForNavigation);
+
+async function verifyExamTabAuthorization() {
+  if (!attemptReady || submitted || centreHeartbeatTerminal) return;
+  try {
+    await postAPI({action:'checkExamAccess',token:cand.token,candidateId:activeCandidateId,examWindowId:cand.examWindowId},{timeoutMs:10000});
+  } catch (err) {
+    if (isPermanentExamAuthorizationError(err)) interruptExamForAuthorization(err);
+    // Network/transport errors are not proof of revocation. Keep the current
+    // timer and answers; the next heartbeat will retry.
+  }
+}
 
 window.addEventListener('blur', () => {
   // iOS app switching is more consistently detected through visibilitychange.
@@ -1094,21 +1154,30 @@ function isPermanentExamAuthorizationError(err) {
   const message = String(err && err.message || '').toLowerCase();
   if ([
     'CENTRE_AUTH_REQUIRED', 'CENTRE_AUTH_INVALID', 'CENTRE_AUTH_REVOKED',
-    'TOKEN_EXPIRED', 'TOKEN_INVALID', 'TOKEN_REVOKED'
+    'TAB_SESSION_REQUIRED', 'TAB_SESSION_INVALID', 'TAB_SESSION_MISMATCH',
+    'ATTEMPT_NOT_ACTIVE', 'TOKEN_EXPIRED', 'TOKEN_INVALID', 'TOKEN_REVOKED'
   ].includes(code)) return true;
   return /exam access requires admin approval|exam access token is invalid|exam access expired or was revoked|token expired or invalid|invalid or revoked token/.test(message);
 }
 
 function interruptExamForAuthorization(err) {
   if (centreHeartbeatTerminal || submitted) return;
+  // Remove the client-held approval. Exam Selector must now ask Admin again.
+  cand.accessToken = '';
+  cand.accessId = '';
+  cand.centreId = '';
+  try { sessionStorage.setItem('neet_candidate', JSON.stringify(cand)); } catch (_) {}
   centreHeartbeatTerminal = true;
   if (centreHeartbeatTimer) clearInterval(centreHeartbeatTimer);
   centreHeartbeatTimer = null;
   [submitBtn,prevBtn,nextBtn,clearBtn,markBtn].forEach(b=>{if(b)b.disabled=true;});
   if (qTitle) qTitle.textContent = 'Centre authorization interrupted';
   if (qText) qText.textContent = 'The server has confirmed that this session token or centre approval is no longer valid. Your locally saved answers remain in this browser. Return to Exam Selector and request fresh approval.';
-  alert('Exam authorization is no longer valid. You will return to Exam Selector for fresh admin approval.');
-  location.replace('exam-selector.html?reauthorize=1');
+  const code = String(err && err.code || '').toUpperCase();
+  alert('Exam authorization is no longer valid. You will be redirected to continue the authorization process.');
+  const target = ['TOKEN_EXPIRED','TOKEN_INVALID','TOKEN_REVOKED'].includes(code)
+    ? 'login.html?reauthorize=1' : 'exam-selector.html?reauthorize=1';
+  location.replace(target);
 }
 
 async function sendCentreHeartbeatWithRetry() {
@@ -1154,6 +1223,28 @@ function startCentreHeartbeat() {
 }
 
 async function init() {
+  if (!window.ZenithTabSession || typeof window.ZenithTabSession.ensure !== 'function') {
+    if (qTitle) qTitle.textContent = 'Tab security helper is missing';
+    if (qText) qText.textContent = 'Refresh this page. If the problem continues, contact the administrator.';
+    return;
+  }
+  try {
+    const previousTabId = String(cand.tabSessionId || '');
+    const currentTabId = await window.ZenithTabSession.ensure(cand);
+    if (previousTabId && previousTabId !== currentTabId) {
+      cand.tabSessionId = currentTabId;
+      cand.accessToken = ''; cand.accessId = '';
+      sessionStorage.setItem('neet_candidate', JSON.stringify(cand));
+      location.replace('exam-selector.html?reauthorize=1');
+      return;
+    }
+    cand.tabSessionId = currentTabId;
+    sessionStorage.setItem('neet_candidate', JSON.stringify(cand));
+  } catch (tabError) {
+    if (qTitle) qTitle.textContent = 'Unable to verify browser tab';
+    if (qText) qText.textContent = tabError.message || 'Return to Exam Selector and request approval again.';
+    return;
+  }
   if (qTitle) {
     qTitle.textContent = 'Loading questions…';
   }
@@ -1253,7 +1344,7 @@ async function init() {
       Number(data.violationCount) || 0
     );
 
-    loadLocalState();
+    loadLocalState(data);
 
     state.violations = Math.max(
       Number(state.violations) || 0,
@@ -1264,6 +1355,7 @@ async function init() {
     startCentreHeartbeat();
 
     save();
+    scheduleServerSave(300);
 
     if (!inExamWindowDisplayOnly()) {
       console.warn(
@@ -1311,6 +1403,10 @@ async function init() {
     if (markBtn) markBtn.disabled = true;
   }
 }
+
+window.addEventListener('online', () => {
+  if (attemptReady && !submitted) scheduleServerSave(250);
+});
 
 function inExamWindowDisplayOnly() {
   // Informational only.
